@@ -16,9 +16,6 @@ Landing Page: [Coming soon...]<br>
 ### I want some nitty-gritty details. ###
 
 
-### Additional Notes: ###
-
-
 ### Who do I talk to? ###
 
 * [Luna Zhang](https://github.com/waffle555)
