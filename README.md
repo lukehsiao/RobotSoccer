@@ -1,8 +1,8 @@
 ## Robot Soccer ##
 
 Version: 0.0.1<br>
-Wiki Homepage: [Robot Soccer Wiki](https://github.com/RobotSoccerCollaboration/RobotSoccer/wiki)
-Landing Page: [Coming soon...]
+Wiki Homepage: [Robot Soccer Wiki](https://github.com/RobotSoccerCollaboration/RobotSoccer/wiki)<br>
+Landing Page: [Coming soon...]<br>
         
 ### What is this repository for? ###
 
