@@ -20,7 +20,7 @@ Landing Page: [Coming Soon]
 
 ### Who do I talk to? ###
 
-* Luna Zhang
-* Luke Hsiao
-* Ammon Gruwell
-* Andrew Keller
+* [Luna Zhang](https://github.com/waffle555)
+* [Luke Hsiao](https://github.com/lukehsiao)
+* [Ammon Gruwell](https://github.com/gruwella)
+* [Andrew Keller](https://github.com/andrewmkeller9)
