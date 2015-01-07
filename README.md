@@ -18,7 +18,7 @@ Landing Page: [Coming soon...]<br>
 
 ### Who do I talk to? ###
 
-* [Luna Zhang](https://github.com/waffle555)
-* [Luke Hsiao](https://github.com/lukehsiao)
-* [Ammon Gruwell](https://github.com/gruwella)
-* [Andrew Keller](https://github.com/andrewmkeller9)
+* [Luna Zhang](https://github.com/waffle555) - Motion
+* [Luke Hsiao](https://github.com/lukehsiao) - Vision
+* [Ammon Gruwell](https://github.com/gruwella) - System Architecture and AI
+* [Andrew Keller](https://github.com/andrewmkeller9) - Mechanical
