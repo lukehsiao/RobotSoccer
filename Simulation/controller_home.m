@@ -108,10 +108,10 @@ function v=skill_guard_goal(robot, ball, P)
 
     % control angle to face ball, but not exceeding +/- 90 degrees.
     theta_d = atan2(ball(2)-robot(2), ball(1)-robot(1));
-    if theta_d > pi/2
-       theta_d = pi/2;
-    elseif theta_d < -pi/2
-        theta_d = -pi/2;
+    if theta_d >= pi/2
+       theta_d = pi/2.25;  % angle pushes ball out (more effective)
+    elseif theta_d <= -pi/2
+        theta_d = -pi/2.25;
     end
     omega = -P.control_k_phi*(robot(3) - theta_d); 
     v = [vx; vy; omega];
