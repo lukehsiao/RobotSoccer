@@ -123,10 +123,10 @@ function v=skill_guard_goal(robot, ball, P)
 
     % control angle to -pi/2
     theta_d = atan2(ball(2)-robot(2), ball(1)-robot(1));
-    if theta_d > pi/2
-       theta_d = pi/2;
-    elseif theta_d < -pi/2
-        theta_d = -pi/2;
+    if theta_d >= pi/2
+       theta_d = pi/2.25;
+    elseif theta_d <= -pi/2
+        theta_d = -pi/2.25;
     end
     omega = -P.control_k_phi*(robot(3) - theta_d); 
     
