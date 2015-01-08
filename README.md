@@ -7,10 +7,7 @@ Landing Page: [Coming soon...]<br>
 ### What is this repository for? ###
 
 
-
 ### How do I run this thing? ###
-
-
 
 
 ### I want some nitty-gritty details. ###
