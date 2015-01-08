@@ -120,8 +120,8 @@ end
 function handle = drawScore(homescore, awayscore,handle,P)
 
     if isempty(handle),
-        handle(1)=text(-P.field_length/4,P.field_width/2+P.field_width/12,sprintf('Home: %d',homescore),'FontSize',24);
-        handle(2)=text(P.field_length/4,P.field_width/2+P.field_width/12,sprintf('Away: %d',awayscore),'FontSize',24);
+        handle(1)=text(-P.field_length/4,P.field_width/2+P.field_width/6,sprintf('Home: %d',homescore),'FontSize',24);
+        handle(2)=text(P.field_length/4,P.field_width/2+P.field_width/6,sprintf('Away: %d',awayscore),'FontSize',24);
     else
         set(handle(1),'String',sprintf('Home: %d',homescore));
         set(handle(2),'String',sprintf('Away: %d',awayscore));
@@ -156,6 +156,7 @@ function drawField(P)
     L = P.field_length;
     G = P.goal_width;
     D = L/10;
+    B = L/20; % border  width
     phi = [0:.1:2*pi,0];
 
     % field and display characteristics
@@ -173,27 +174,16 @@ function drawField(P)
     plot([-L/2,-L/2+L/10,-L/2+L/10,-L/2],[-W/3,-W/3,W/3,W/3],'k') % left goal box
     plot(W/4*cos(phi),W/4*sin(phi),'k') % center circle
     
+    % border
+    fill([L/2,L/2+B,L/2+B,L/2],[-W/2,-W/2,W/2,W/2],[0,0,0]) % left border
+    fill([-L/2,-L/2-B,-L/2-B,-L/2],[-W/2,-W/2,W/2,W/2],[0,0,0]) % right border
+    fill([L/2+B,L/2+B,-L/2-B,-L/2-B],[W/2,W/2+B,W/2+B,W/2],[0,0,0]) % top border
+    fill([L/2+B,L/2+B,-L/2-B,-L/2-B],-[W/2,W/2+B,W/2+B,W/2],[0,0,0]) % bottom border
+
     % goals
-    fill([L/2,L/2-L/40,L/2-L/40,L/2],[-G/2,-G/2,G/2,G/2],P.goal_color) % left goal
-    fill([-L/2,-L/2+L/40,-L/2+L/40,-L/2],[-G/2,-G/2,G/2,G/2],P.goal_color) % right goal
-    
-    % markers
-    % NOTE: this is a hack because I am not using P.marker.  The
-    % vision system sees markers defined in P.marker and not here.  Need to
-    % fix.
-    fill(-L/2+P.marker_radius*cos(phi),W/2+P.marker_radius*sin(phi),P.marker_color)
-    text(-L/2-.05,W/2+.05,'1')
-    fill(P.marker_radius*cos(phi),W/2+P.marker_radius*sin(phi),P.marker_color)
-    text(0,W/2+.05,'2')
-    fill(L/2+P.marker_radius*cos(phi),W/2+P.marker_radius*sin(phi),P.marker_color)
-    text(L/2+.05,W/2+.05,'3')
-    fill(L/2+P.marker_radius*cos(phi),-W/2+P.marker_radius*sin(phi),P.marker_color)
-    text(L/2+.05,-W/2-.05,'4')
-    fill(P.marker_radius*cos(phi),-W/2+P.marker_radius*sin(phi),P.marker_color)
-    text(0,-W/2-.05,'5')
-    fill(-L/2+P.marker_radius*cos(phi),-W/2+P.marker_radius*sin(phi),P.marker_color)
-    text(-L/2-.05,-W/2-.05,'6')
-    
+    fill([L/2,L/2+L/40,L/2+L/40,L/2],[-G/2,-G/2,G/2,G/2],P.goal_color) % left goal
+    fill([-L/2,-L/2-L/40,-L/2-L/40,-L/2],[-G/2,-G/2,G/2,G/2],P.goal_color) % right goal
+        
   
 end 
 

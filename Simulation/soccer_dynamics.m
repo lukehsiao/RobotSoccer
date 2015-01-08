@@ -223,13 +223,13 @@ function sys=mdlUpdate(t,x,u,P)
     score = x(1+NN:2+NN);
     
     % reset the game if a goal has been scored,
-    if (ball(1)-ball0(1)>P.field_length/2+.1) % home team scored
+    if (ball(1)-ball0(1)>P.field_length/2+.05 && (ball(2)-ball0(2) < P.goal_width/2) && (ball(2)-ball0(2) > -P.goal_width/2)) % home team scored
         home_robot0 = home_robot - P.home_team_initial_configurations;
         away_robot0 = away_robot - P.away_team_initial_configurations;
         ball0 = ball - P.ball_initial_position;
         ball_vel0 = ball_vel - P.ball_initial_velocity;
         score(1)=score(1)+1;  
-    elseif (ball(1)-ball0(1)<-P.field_length/2-.1), % away team scored
+    elseif (ball(1)-ball0(1)<-P.field_length/2-.05 && (ball(2)-ball0(2) < P.goal_width/2) && (ball(2)-ball0(2) > -P.goal_width/2)), % away team scored
         home_robot0 = home_robot - P.home_team_initial_configurations;
         away_robot0 = away_robot - P.away_team_initial_configurations;
         ball0 = ball - P.ball_initial_position;

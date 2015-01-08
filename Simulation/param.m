@@ -1,8 +1,9 @@
 % Parameter file for robot soccer simulator
 %
-% Modified: 2/11/2014 - R. Beard
+% Modified: 
+%   2/11/2014 - R. Beard
+%   1/8/2015 - R. Beard
 %
-
 
 % number of robots per team
 P.num_robots = 2;
@@ -18,30 +19,10 @@ P.goal_width = P.field_width/3;
 P.goal_color = [252 148 3]/256;
 P.display_rate = 0.1;
 
-% marker locations  % in home team coordinate systems
-P.marker = [...
-      -P.field_length/2, P.field_width/2;...
-      0, P.field_width/2;...
-      P.field_length/2, P.field_width/2;...
-      P.field_length/2, -P.field_width/2;...
-      0, -P.field_width/2;...
-      -P.field_length/2, -P.field_width/2;...
-      ]';
-P.num_markers = size(P.marker,2);
-P.marker_radius = 0.04;
-P.marker_color = [0 150 148]/256;
-  
 % constants that govern ball dynamics
 P.ball_radius = 0.03;
 P.ball_mu = 0.1;  % coefficient of friction for ball
 P.ball_spring = 500;% spring constant that models wall and robot interactions
-
-% characteristics of camera
-P.camera_min_range = .15; 
-P.camera_max_range = 3;
-P.camera_fov = 63*pi/180;
-P.camera_out_of_range = -999;
-P.camera_frame_rate = 0.03;
 
 % robot parameters and geometry
 P.wheel_radius = 0.03; % m (this is a guess)
@@ -86,10 +67,7 @@ P.control_k_vx  = 5;  % gain for proportional control of x-position
 P.control_k_vy  = 5;  % gain for proportional control of y-position
 P.control_k_phi = 2;  % gain for proportional angle control
 
-% observer gains
-P.observer_Q_self = 100*eye(3);
-P.observer_R_range = .1;
-P.observer_R_bearing = 1*pi/180;
+
   
  
 
