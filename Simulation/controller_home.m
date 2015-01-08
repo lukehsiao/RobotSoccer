@@ -86,13 +86,18 @@ function v=skill_follow_ball_on_line(robot, ball, x_pos, P)
     v = [vx; vy; omega];
 end
 
+%------------------------------------------
 % skill - follow ball on line in front of goal, never leaving goal
+%   follows the y-position of the ball, while maintaining x position in
+%   front of the goal. Angle always faces the ball. Does not leave the
+%   area of the goal.
 
 function v=skill_guard_goal(robot, ball, P)
-    % control x position to stay on current line
+    % control x position to stay on -15/16 the field length
     vx = -P.control_k_vx*(robot(1)-(-15*P.field_width/16));
     
-    % control y position to match the ball's y-position
+    % control y position to match the ball's y-position while ball is
+    % within the goal. Otherwise, stay at edges.
     if ball(2) > P.field_width/6
         vy = -P.control_k_vy*(robot(2)-(P.field_width/6));
     elseif ball(2) < -P.field_width/6
@@ -101,7 +106,7 @@ function v=skill_guard_goal(robot, ball, P)
         vy = -P.control_k_vy*(robot(2)-ball(2));
     end
 
-    % control angle to -pi/2
+    % control angle to face ball, but not exceeding +/- 90 degrees.
     theta_d = atan2(ball(2)-robot(2), ball(1)-robot(1));
     if theta_d > pi/2
        theta_d = pi/2;
@@ -109,7 +114,6 @@ function v=skill_guard_goal(robot, ball, P)
         theta_d = -pi/2;
     end
     omega = -P.control_k_phi*(robot(3) - theta_d); 
-    
     v = [vx; vy; omega];
 end
 
