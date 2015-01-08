@@ -33,7 +33,8 @@ function v_c=controller_away_full_state(uu,P)
     v1 = skill_follow_ball_on_line(robot(:,1), ball, -P.field_width/3, P);
  
     % robot #2 stays on line, following the ball, facing the goal
-    v2 = skill_follow_ball_on_line(robot(:,2), ball, -2*P.field_width/3, P);
+    v2 = skill_guard_goal(robot(:,2), ball, P);
+    %skill_follow_ball_on_line(robot(:,2), ball, -2*P.field_width/3, P);
 
     
     % output velocity commands to robots
@@ -100,6 +101,33 @@ function v=skill_go_to_point(robot, point, P)
 
     % control angle to -pi/2
     theta_d = atan2(P.goal(2)-robot(2), P.goal(1)-robot(1));
+    omega = -P.control_k_phi*(robot(3) - theta_d); 
+    
+    v = [vx; vy; omega];
+end
+
+% skill - follow ball on line in front of goal, never leaving goal
+
+function v=skill_guard_goal(robot, ball, P)
+    % control x position to stay on current line
+    vx = -P.control_k_vx*(robot(1)-(-15*P.field_width/16));
+    
+    % control y position to match the ball's y-position
+    if ball(2) > P.field_width/6
+        vy = -P.control_k_vy*(robot(2)-(P.field_width/6));
+    elseif ball(2) < -P.field_width/6
+        vy = -P.control_k_vy*(robot(2)-(-P.field_width/6));
+    else
+        vy = -P.control_k_vy*(robot(2)-ball(2));
+    end
+
+    % control angle to -pi/2
+    theta_d = atan2(ball(2)-robot(2), ball(1)-robot(1));
+    if theta_d > pi/2
+       theta_d = pi/2;
+    elseif theta_d < -pi/2
+        theta_d = -pi/2;
+    end
     omega = -P.control_k_phi*(robot(3) - theta_d); 
     
     v = [vx; vy; omega];
