@@ -29,13 +29,13 @@ function v_c=controller_away_full_state(uu,P)
     t      = uu(1+NN);
 
     % robot #1 positions itself behind ball and rushes the goal.
-    %v1 = play_rush_goal(robot(:,1), ball, P);
-    v1 = skill_follow_ball_on_line(robot(:,1), ball, -P.field_width/3, P);
+    v1 = play_rush_goal(robot(:,1), ball, P);
+    %v1 = skill_follow_ball_on_line(robot(:,1), ball, -P.field_width/3, P);
  
     % robot #2 stays on line, following the ball, facing the goal
     %v2 = play_rush_goal(robot(:,2), ball, P);
-    %v2 = skill_guard_goal(robot(:,2), ball, P);
-    v2 = skill_follow_ball_on_line(robot(:,2), ball, -2*P.field_width/3, P);
+    v2 = skill_guard_goal(robot(:,2), ball, P);
+    %v2 = skill_follow_ball_on_line(robot(:,2), ball, -2*P.field_width/3, P);
 
     
     % output velocity commands to robots
