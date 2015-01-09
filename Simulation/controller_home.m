@@ -7,7 +7,13 @@
 %   2/24/2014 - R. Beard
 %
 
+
+
 function v_c=controller_home_full_state(uu,P)
+
+    persistent player_roles;
+    normal = 0;
+    reversed = 1;
 
     % process inputs to function
     % robots - own team
@@ -28,6 +34,31 @@ function v_c=controller_home_full_state(uu,P)
     NN = NN + 2;
     % current time
     t      = uu(1+NN);
+
+    if(t == 0)
+        player_roles = normal;
+    end
+    
+    if(player_roles == normal)
+        attacker = robot(:,1);
+        defender = robot(:,2);
+    else
+        defender = robot(:,1);
+        attacker = robot(:,2);
+    end
+    
+    if(ball(1) < attacker(1))
+        %player_roles
+        if(player_roles == normal)
+            player_roles = reversed;
+            defender = robot(:,1);
+            attacker = robot(:,2);
+        else
+            player_roles = normal;
+            attacker = robot(:,1);
+            defender = robot(:,2);
+        end
+    end
     
     defense = 0;
     offense = 1;
@@ -37,27 +68,24 @@ function v_c=controller_home_full_state(uu,P)
         playtype = defense;
     end
     
-    attacker = robot(:,1);
-    defender = robot(:,2);
     
-    if(playtype == offense)
-        % robot #1 positions itself behind ball and rushes the goal.
-        v1 = play_rush_goal(attacker, ball, P);
-
-        % robot #2 stays on line, following the ball, facing the goal
-        %v2 = skill_guard_goal(robot(:,2), ball, P);
-        v2 = skill_follow_ball_on_line(defender, ball, 0, P);
+    if(player_roles == normal)
+        if(playtype == offense)
+            v1 = play_rush_goal(attacker, ball, P);
+            v2 = skill_follow_ball_on_line(defender, ball, 0, P);
+        else
+            v1 = play_rush_goal(attacker, ball, P);
+            v2 = skill_guard_goal(defender, ball, P);
+        end
     else
-        % robot #1 positions itself behind ball and rushes the goal.
-        v1 = play_rush_goal(attacker, ball, P);
-
-        % robot #2 stays on line, following the ball, facing the goal
-        v2 = skill_guard_goal(defender, ball, P);
+        if(playtype == offense)
+            v2 = play_rush_goal(attacker, ball, P);
+            v1 = skill_follow_ball_on_line(defender, ball, 0, P);
+        else
+            v2 = play_rush_goal(attacker, ball, P);
+            v1 = skill_guard_goal(defender, ball, P);
+        end
     end
-
-
-    
-    
     
     % output velocity commands to robots
     v1 = utility_saturate_velocity(v1,P);
