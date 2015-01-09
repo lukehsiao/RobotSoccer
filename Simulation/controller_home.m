@@ -28,13 +28,36 @@ function v_c=controller_home_full_state(uu,P)
     NN = NN + 2;
     % current time
     t      = uu(1+NN);
+    
+    defense = 0;
+    offense = 1;
+    playtype = offense;
+    
+    if(ball(1) < (P.field_width/8))
+        playtype = defense;
+    end
+    
+    attacker = robot(:,1);
+    defender = robot(:,2);
+    
+    if(playtype == offense)
+        % robot #1 positions itself behind ball and rushes the goal.
+        v1 = play_rush_goal(attacker, ball, P);
 
-    % robot #1 positions itself behind ball and rushes the goal.
-    v1 = play_rush_goal(robot(:,1), ball, P);
- 
-    % robot #2 stays on line, following the ball, facing the goal
-    v2 = skill_guard_goal(robot(:,2), ball, P);
+        % robot #2 stays on line, following the ball, facing the goal
+        %v2 = skill_guard_goal(robot(:,2), ball, P);
+        v2 = skill_follow_ball_on_line(defender, ball, 0, P);
+    else
+        % robot #1 positions itself behind ball and rushes the goal.
+        v1 = play_rush_goal(attacker, ball, P);
 
+        % robot #2 stays on line, following the ball, facing the goal
+        v2 = skill_guard_goal(defender, ball, P);
+    end
+
+
+    
+    
     
     % output velocity commands to robots
     v1 = utility_saturate_velocity(v1,P);
