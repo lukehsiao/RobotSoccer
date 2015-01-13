@@ -54,7 +54,6 @@ function v_c = strategy_switch_offense_and_defense(robot, ball, P, t)
     if(mod(t, 1) == 0.0)
         robot1_loc = robot(:,1);
         robot2_loc = robot(:,2);
-        t
     end
     
     if(player_roles == normal)
@@ -64,6 +63,9 @@ function v_c = strategy_switch_offense_and_defense(robot, ball, P, t)
         defender = robot(:,1);
         attacker = robot(:,2);
     end
+    
+    % if player gets stuck in one place
+    
     
     % if the ball gets behind the attacker then switch roles
     if(ball(1) < (attacker(1)-((P.robot_radius)/2)))

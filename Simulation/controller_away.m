@@ -64,22 +64,22 @@ function v_c = strategy_switch_offense_and_defense(robot, ball, P, t)
         end
     % if the ball is very near our own goal (within 7/8ths of the field
     % width)
-%     elseif(ball(1) < -3*(P.field_width)/8)
-%         % compare distance of defender and attacker to the ball
-%         attack_distance = utility_calculate_distance(attacker(1), attacker(2), ball(1), ball(2)); 
-%         defend_distance = utility_calculate_distance(defender(1), defender(2), ball(1), ball(2));
-%         if(attack_distance < defend_distance)
-%             % make the player closest to the ball be the defender
-%             if(player_roles == normal)
-%                 player_roles = reversed;
-%                 defender = robot(:,1);
-%                 attacker = robot(:,2);
-%             else
-%                 player_roles = normal;
-%                 attacker = robot(:,1);
-%                 defender = robot(:,2);
-%             end
-%         end
+    elseif(ball(1) < -3*(P.field_width)/8)
+        % compare distance of defender and attacker to the ball
+        attack_distance = utility_calculate_distance(attacker(1), attacker(2), ball(1), ball(2)); 
+        defend_distance = utility_calculate_distance(defender(1), defender(2), ball(1), ball(2));
+        if(attack_distance < defend_distance)
+            % make the player closest to the ball be the defender
+            if(player_roles == normal)
+                player_roles = reversed;
+                defender = robot(:,1);
+                attacker = robot(:,2);
+            else
+                player_roles = normal;
+                attacker = robot(:,1);
+                defender = robot(:,2);
+            end
+        end
     end
     
     defense = 0;
