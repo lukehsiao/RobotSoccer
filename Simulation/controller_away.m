@@ -7,7 +7,14 @@
 %   2/24/2014 - R. Beard
 %
 
-function v_c=controller_away_full_state(uu,P)
+
+
+function v_c=controller_home_full_state(uu,P)
+
+%     persistent player_roles;
+%     normal = 0;
+%     reversed = 1;
+
     % process inputs to function
     % robots - own team
     for i=1:P.num_robots,
@@ -27,20 +34,147 @@ function v_c=controller_away_full_state(uu,P)
     NN = NN + 2;
     % current time
     t      = uu(1+NN);
+    
+    v_c = strategy_switch_offense_and_defense(robot, ball, P, t);
 
-    % robot #1 positions itself behind ball and rushes the goal.
-    v1 = play_rush_goal(robot(:,1), ball, P);
-    %v1 = skill_follow_ball_on_line(robot(:,1), ball, -P.field_width/3, P);
- 
-    % robot #2 stays on line, following the ball, facing the goal
-    v2 = play_rush_goal(robot(:,2), ball, P);
-    %v2 = skill_guard_goal(robot(:,2), ball, P);
-    %v2 = skill_follow_ball_on_line(robot(:,2), ball, -2*P.field_width/3, P);
+%     if(t == 0)
+%         player_roles = normal;
+%     end
+%     
+%     if(player_roles == normal)
+%         attacker = robot(:,1);
+%         defender = robot(:,2);
+%     else
+%         defender = robot(:,1);
+%         attacker = robot(:,2);
+%     end
+%     
+%     % if the ball gets behind the attacker then switch roles
+%     if(ball(1) < (attacker(1)-((P.robot_radius)/2)))
+%         if(player_roles == normal)
+%             player_roles = reversed;
+%             defender = robot(:,1);
+%             attacker = robot(:,2);
+%         else
+%             player_roles = normal;
+%             attacker = robot(:,1);
+%             defender = robot(:,2);
+%         end
+%     end
+%     
+%     defense = 0;
+%     offense = 1;
+%     playtype = offense;
+%     
+%     % If the ball gets close to mid-field then go on defense
+%     if(ball(1) < (P.field_width/8))
+%         playtype = defense;
+%     end
+%     
+%     
+%     if(player_roles == normal)
+%         if(playtype == offense)
+%             v1 = play_rush_goal(attacker, ball, P);
+%             v2 = skill_follow_ball_on_line(defender, ball, 0, P);
+%         else
+%             v1 = play_rush_goal(attacker, ball, P);
+%             v2 = skill_guard_goal(defender, ball, P);
+%         end
+%     else
+%         if(playtype == offense)
+%             v2 = play_rush_goal(attacker, ball, P);
+%             v1 = skill_follow_ball_on_line(defender, ball, 0, P);
+%         else
+%             v2 = play_rush_goal(attacker, ball, P);
+%             v1 = skill_guard_goal(defender, ball, P);
+%         end
+%     end
+%     
+%     % output velocity commands to robots
+%     v1 = utility_saturate_velocity(v1,P);
+%     v2 = utility_saturate_velocity(v2,P);
+%     v_c = [v1; v2];
+end
 
+function v_c = strategy_switch_offense_and_defense(robot, ball, P, t)
+    persistent player_roles;
+    normal = 0;
+    reversed = 1;
+
+    if(t == 0)
+        player_roles = normal;
+    end
+    
+    if(player_roles == normal)
+        attacker = robot(:,1);
+        defender = robot(:,2);
+    else
+        defender = robot(:,1);
+        attacker = robot(:,2);
+    end
+    
+    % if the ball gets behind the attacker then switch roles
+    if(ball(1) < (attacker(1)-((P.robot_radius)/2)))
+        if(player_roles == normal)
+            player_roles = reversed;
+            defender = robot(:,1);
+            attacker = robot(:,2);
+        else
+            player_roles = normal;
+            attacker = robot(:,1);
+            defender = robot(:,2);
+        end
+    elseif(ball(1) < -3*(P.field_width)/8)
+        % compare distance of defender and attacker to the ball
+        attack_distance = utility_calculate_distance(attacker(1), attacker(2), ball(1), ball(2)); 
+        defend_distance = utility_calculate_distance(defender(1), defender(2), ball(1), ball(2));
+        if(attack_distance < defend_distance)
+            if(player_roles == normal)
+                player_roles = reversed;
+                defender = robot(:,1);
+                attacker = robot(:,2);
+            else
+                player_roles = normal;
+                attacker = robot(:,1);
+                defender = robot(:,2);
+            end
+        end
+    end
+    
+    defense = 0;
+    offense = 1;
+    playtype = offense;
+    
+    % If the ball gets close to mid-field then go on defense
+    if(ball(1) < (P.field_width/8))
+        playtype = defense;
+    end
+    
+    if(player_roles == normal)
+        if(playtype == offense)
+            v1 = play_rush_goal(attacker, ball, P);
+            v2 = skill_follow_ball_on_line(defender, ball, 0, P);
+        else
+            v1 = play_rush_goal(attacker, ball, P);
+            v2 = skill_guard_goal(defender, ball, P);
+        end
+    else
+        if(playtype == offense)
+            v2 = play_rush_goal(attacker, ball, P);
+            v1 = skill_follow_ball_on_line(defender, ball, 0, P);
+        else
+            v2 = play_rush_goal(attacker, ball, P);
+            v1 = skill_guard_goal(defender, ball, P);
+        end
+    end
     
     % output velocity commands to robots
-    v1 = utility_saturate_velocity(v1,P);
-    v2 = utility_saturate_velocity(v2,P);
+%     v1 = utility_saturate_velocity(v1,P);
+%     v2 = utility_saturate_velocity(v2,P);
+    
+    v1 = skill_do_nothing();
+    v2 = skill_do_nothing();
+    
     v_c = [v1; v2];
 end
 
@@ -53,6 +187,7 @@ end
 % plays at a lower level.  For example, switching between offense and
 % defense would be a strategy.
 function v = play_rush_goal(robot, ball, P)
+  
   % normal vector from ball to goal
   n = P.goal-ball;
   n = n/norm(n);
@@ -60,7 +195,7 @@ function v = play_rush_goal(robot, ball, P)
   position = ball - 0.2*n;
     
   if norm(position-robot(1:2))<.21,
-      v = skill_go_to_point(robot, P.goal, P);
+      v = skill_go_to_point_angle_corrected(ball, robot, P.goal, P);
   else
       v = skill_go_to_point(robot, position, P);
   end
@@ -87,6 +222,37 @@ function v=skill_follow_ball_on_line(robot, ball, x_pos, P)
     v = [vx; vy; omega];
 end
 
+%------------------------------------------
+% skill - follow ball on line in front of goal, never leaving goal
+%   follows the y-position of the ball, while maintaining x position in
+%   front of the goal. Angle always faces the ball. Does not leave the
+%   area of the goal.
+
+function v=skill_guard_goal(robot, ball, P)
+    % control x position to stay on -15/16 the field length
+    vx = -P.control_k_vx*(robot(1)-(-15*P.field_width/16));
+    
+    % control y position to match the ball's y-position while ball is
+    % within the goal. Otherwise, stay at edges.
+    if ball(2) > P.field_width/6
+        vy = -P.control_k_vy*(robot(2)-(P.field_width/6));
+    elseif ball(2) < -P.field_width/6
+        vy = -P.control_k_vy*(robot(2)-(-P.field_width/6));
+    else
+        vy = -P.control_k_vy*(robot(2)-ball(2));
+    end
+
+    % control angle to face ball, but not exceeding +/- 90 degrees.
+    theta_d = atan2(ball(2)-robot(2), ball(1)-robot(1));
+    if theta_d >= pi/2
+       theta_d = pi/2.25;  % angle pushes ball out (more effective)
+    elseif theta_d <= -pi/2
+        theta_d = -pi/2.25;
+    end
+    omega = -P.control_k_phi*(robot(3) - theta_d); 
+    v = [vx; vy; omega];
+end
+
 %-----------------------------------------
 % skill - go to point
 %   follows the y-position of the ball, while maintaining x-position at
@@ -107,31 +273,29 @@ function v=skill_go_to_point(robot, point, P)
     v = [vx; vy; omega];
 end
 
-% skill - follow ball on line in front of goal, never leaving goal
+function v=skill_go_to_point_angle_corrected(ball, robot, point, P)
 
-function v=skill_guard_goal(robot, ball, P)
     % control x position to stay on current line
-    vx = -P.control_k_vx*(robot(1)-(-15*P.field_width/16));
+    vx = -P.control_k_vx*(robot(1)-point(1));
     
     % control y position to match the ball's y-position
-    if ball(2) > P.field_width/6
-        vy = -P.control_k_vy*(robot(2)-(P.field_width/6));
-    elseif ball(2) < -P.field_width/6
-        vy = -P.control_k_vy*(robot(2)-(-P.field_width/6));
-    else
-        vy = -P.control_k_vy*(robot(2)-ball(2));
-    end
+    vy = -P.control_k_vy*(robot(2)-point(2));
+    
+    y_delta = robot(2) - ball(2);
 
     % control angle to -pi/2
-    theta_d = atan2(ball(2)-robot(2), ball(1)-robot(1));
-    if theta_d >= pi/2
-       theta_d = pi/2.25;
-    elseif theta_d <= -pi/2
-        theta_d = -pi/2.25;
-    end
+    theta_d = atan2((P.goal(2)-(y_delta*60))-ball(2), P.goal(1)-ball(1));
     omega = -P.control_k_phi*(robot(3) - theta_d); 
     
     v = [vx; vy; omega];
+end
+
+function v=skill_do_nothing()
+    v = [1;1;0];
+end
+
+function distance = utility_calculate_distance(item1_x, item1_y, item2_x, item2_y)
+    distance = sqrt((item1_x - item2_x)^2 + (item1_y - item2_y)^2);
 end
 
 
