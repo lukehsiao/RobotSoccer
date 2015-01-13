@@ -47,8 +47,8 @@ function v_c=controller_home_full_state(uu,P)
         attacker = robot(:,2);
     end
     
-    if(ball(1) < attacker(1))
-        %player_roles
+    % if the ball gets behind the attacker then switch roles
+    if(ball(1) < (attacker(1)-((P.robot_radius)/2)))
         if(player_roles == normal)
             player_roles = reversed;
             defender = robot(:,1);
@@ -64,6 +64,7 @@ function v_c=controller_home_full_state(uu,P)
     offense = 1;
     playtype = offense;
     
+    % If the ball gets close to mid-field then go on defense
     if(ball(1) < (P.field_width/8))
         playtype = defense;
     end
@@ -110,7 +111,7 @@ function v = play_rush_goal(robot, ball, P)
   position = ball - 0.2*n;
     
   if norm(position-robot(1:2))<.21,
-      v = skill_go_to_point(robot, P.goal, P);
+      v = skill_go_to_point_angle_corrected(ball, robot, P.goal, P);
   else
       v = skill_go_to_point(robot, position, P);
   end
@@ -183,6 +184,23 @@ function v=skill_go_to_point(robot, point, P)
 
     % control angle to -pi/2
     theta_d = atan2(P.goal(2)-robot(2), P.goal(1)-robot(1));
+    omega = -P.control_k_phi*(robot(3) - theta_d); 
+    
+    v = [vx; vy; omega];
+end
+
+function v=skill_go_to_point_angle_corrected(ball, robot, point, P)
+
+    % control x position to stay on current line
+    vx = -P.control_k_vx*(robot(1)-point(1));
+    
+    % control y position to match the ball's y-position
+    vy = -P.control_k_vy*(robot(2)-point(2));
+    
+    y_delta = robot(2) - ball(2);
+
+    % control angle to -pi/2
+    theta_d = atan2((P.goal(2)-(y_delta*50))-ball(2), P.goal(1)-ball(1));
     omega = -P.control_k_phi*(robot(3) - theta_d); 
     
     v = [vx; vy; omega];
