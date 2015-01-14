@@ -1,7 +1,8 @@
 function v = estimateBallVelocity(ball, P)
 %ESTIMATEBALLVELOCITY Estimate the balls velocity based on current postion
-%   Take the diferential of the balls current and previous position v(1) is
-%   the balls velocity v(2) is the current direction of the ball    
+%   Take the diferential of the balls current and previous position. v(1) 
+%   is the balls velocity, v(2) is the current direction of the ball, v(3)
+%   indicates if the estimation is valid (1 for yes, 0 for no);
     
     % Persisitent Variables
     persistent first_run;
@@ -30,32 +31,17 @@ function v = estimateBallVelocity(ball, P)
     % Estiamate the x and y velocity of the ball
     tau = 1/(30*2*pi);
     velocity_x = (2*tau -P.control_sample_rate)/...
-        (2*tau+P.control_sample_rate)*velocity_x...
-                        + 2/(2*tau+P.control_sample_rate)*(position_x - position_x_prev);
-    velocity_y = (2*tau -P.control_sample_rate)/(2*tau+P.control_sample_rate)*velocity_y...
-                        + 2/(2*tau+P.control_sample_rate)*(position_y - position_y_prev);
+        (2*tau+P.control_sample_rate)*velocity_x +...
+        2/(2*tau+P.control_sample_rate)*(position_x - position_x_prev);
+    velocity_y = (2*tau -P.control_sample_rate)/...
+        (2*tau+P.control_sample_rate)*velocity_y +...
+        2/(2*tau+P.control_sample_rate)*(position_y - position_y_prev);
     
     % Calculate Velocity
-    magnitude = sqrt(velocity_x^2+velocity_y^2);
+    magnitude = norm([velocity_x;velocity_y]);
     
     % Calculate Direction
-    if velocity_x == 0,
-        if velocity_y == 0,
-            direction = 0;
-        elseif velocity_y > 0,
-            direction = pi/2;
-        elseif velocity_y < 0,
-            direction = -pi/2;
-        end
-    else
-        if velocity_x > 0,
-            direction = atan(velocity_y/velocity_x);
-        elseif velocity_x < 0 && velocity_y > 0,
-            direction = pi/2 - atan(velocity_y/velocity_x);
-        elseif velocity_x < 0 && velocity_y <= 0,
-            direction = - pi/2 - atan(velocity_y/velocity_x);
-        end
-    end
+    direction = atan2(velocity_y,velocity_x);
     
     % validate the estimated data
     estimated_magnitude = -P.ball_mu*magnitude_prev*...
