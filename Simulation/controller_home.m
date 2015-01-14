@@ -7,7 +7,7 @@
 %   2/24/2014 - R. Beard
 %
 
-
+%%%%%%%%%%%%%%%%%%% Main %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function v_c=controller_home_full_state(uu,P)
 
@@ -34,28 +34,25 @@ function v_c=controller_home_full_state(uu,P)
     v_c = strategy_switch_offense_and_defense(robot, ball, P, t);
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%% Strategies %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 function v_c = strategy_switch_offense_and_defense(robot, ball, P, t)
     persistent player_roles;
-    normal = 0;
-    reversed = 1;
-    
-    persistent time_play_working;
     persistent robot1_loc;
     persistent robot2_loc;
+    
+    % player role states
+    normal = 0;
+    reversed = 1;
 
+    %initialize persistent variables
     if(t == 0)
         player_roles = normal;
-        time_play_working = 0;
         robot1_loc = robot(:,1);
         robot2_loc = robot(:,2);
     end
     
-    
-    if(mod(t, 1) == 0.0)
-        robot1_loc = robot(:,1);
-        robot2_loc = robot(:,2);
-    end
-    
+    % initialize player roles
     if(player_roles == normal)
         attacker = robot(:,1);
         defender = robot(:,2);
@@ -64,7 +61,28 @@ function v_c = strategy_switch_offense_and_defense(robot, ball, P, t)
         attacker = robot(:,2);
     end
     
-    % if player gets stuck in one place
+    % Every second, compare robots location to its location 1 second ago
+    if(mod(t, 1) == 0.0)
+        old1_loc = robot1_loc;
+        old2_loc = robot2_loc;
+        robot1_loc = robot(:,1);
+        robot2_loc = robot(:,2);
+        dist1 = utility_calculate_distance(old1_loc(1), old1_loc(2), robot1_loc(1), robot1_loc(2));
+        dist2 = utility_calculate_distance(old2_loc(1), old2_loc(2), robot2_loc(1), robot2_loc(2));
+        
+        % If neither robot has moved much in a while then switch roles
+        if(dist1 < 0.15 && dist2 < 0.15)
+            if(player_roles == normal)
+                player_roles = reversed;
+                defender = robot(:,1);
+                attacker = robot(:,2);
+            else
+                player_roles = normal;
+                attacker = robot(:,1);
+                defender = robot(:,2);
+            end
+        end
+    end
     
     
     % if the ball gets behind the attacker then switch roles
@@ -77,24 +95,6 @@ function v_c = strategy_switch_offense_and_defense(robot, ball, P, t)
             player_roles = normal;
             attacker = robot(:,1);
             defender = robot(:,2);
-        end
-    % if the ball is very near our own goal (within 7/8ths of the field
-    % width)
-    elseif(ball(1) < -3*(P.field_width)/8)
-        % compare distance of defender and attacker to the ball
-        attack_distance = utility_calculate_distance(attacker(1), attacker(2), ball(1), ball(2)); 
-        defend_distance = utility_calculate_distance(defender(1), defender(2), ball(1), ball(2));
-        if(attack_distance < defend_distance)
-            % make the player closest to the ball be the defender
-            if(player_roles == normal)
-                player_roles = reversed;
-                defender = robot(:,1);
-                attacker = robot(:,2);
-            else
-                player_roles = normal;
-                attacker = robot(:,1);
-                defender = robot(:,2);
-            end
         end
     end
     
@@ -132,6 +132,8 @@ function v_c = strategy_switch_offense_and_defense(robot, ball, P, t)
     v_c = [v1; v2];
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%% Plays %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %-----------------------------------------
 % play - rush goal
 %   - go to position behind ball
@@ -155,6 +157,8 @@ function v = play_rush_goal(robot, ball, P)
   end
 
 end
+
+%%%%%%%%%%%%%%%%%%%%%%% Skills %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %-----------------------------------------
 % skill - follow ball on line
@@ -244,6 +248,41 @@ function v=skill_go_to_point_angle_corrected(ball, robot, point, P)
     v = [vx; vy; omega];
 end
 
+function roles=skill_switch_roles(player_roles, myparams, robot)
+    if(player_roles == myparams.normal)
+        player_roles = myparams.reversed;
+        defender = robot(:,1);
+        attacker = robot(:,2);
+    else
+        player_roles = myparams.normal;
+        attacker = robot(:,1);
+        defender = robot(:,2);
+    end
+    roles(1) = player_roles;
+    roles(2) = attacker(3);
+    roles(3) = attacker(2);
+    roles(4) = attacker(1);
+    roles(5) = defender(3);
+    roles(6) = defender(2);
+    roles(7) = defender(1);
+end
+
+function v=skill_go_to_point_avoid_obstacles(robot, point, P)
+    % control x position to stay on current line
+    vx = -P.control_k_vx*(robot(1)-point(1));
+    
+    % control y position to match the ball's y-position
+    vy = -P.control_k_vy*(robot(2)-point(2));
+
+    % control angle to -pi/2
+    theta_d = atan2(P.goal(2)-robot(2), P.goal(1)-robot(1));
+    omega = -P.control_k_phi*(robot(3) - theta_d); 
+    
+    v = [vx; vy; omega];
+end
+
+%%%%%%%%%%%%%%%%%%% Utilities %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
 function distance = utility_calculate_distance(item1_x, item1_y, item2_x, item2_y)
     distance = sqrt((item1_x - item2_x)^2 + (item1_y - item2_y)^2);
 end
@@ -266,7 +305,7 @@ end
 %   Take the diferential of the balls current and previous position. v(1) 
 %   is the balls velocity, v(2) is the current direction of the ball, v(3)
 %   indicates if the estimation is valid (1 for yes, 0 for no);
-    
+function v = utility_get_ball_info(ball, P)
     % Persisitent Variables
     persistent first_run;
     persistent position_x_prev;
@@ -329,4 +368,11 @@ end
     v(1) = magnitude;
     v(2) = direction;
     v(3) = information_valid;
+end
+
+%%%%%%%%%%%%%%%%%%%% Other %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function var=defines()
+    normal = 0;
+    reversed = 1;
 end
