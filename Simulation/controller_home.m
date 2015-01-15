@@ -31,12 +31,12 @@ function v_c=controller_home_full_state(uu,P)
     % current time
     t      = uu(1+NN);
     
-    v_c = strategy_switch_offense_and_defense(robot, ball, P, t);
+    v_c = strategy_switch_offense_and_defense(robot, opponent, ball, P, t);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% Strategies %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function v_c = strategy_switch_offense_and_defense(robot, ball, P, t)
+function v_c = strategy_switch_offense_and_defense(robot, opponent, ball, P, t)
     persistent player_roles;
     persistent robot1_loc;
     persistent robot2_loc;
@@ -67,8 +67,8 @@ function v_c = strategy_switch_offense_and_defense(robot, ball, P, t)
         old2_loc = robot2_loc;
         robot1_loc = robot(:,1);
         robot2_loc = robot(:,2);
-        dist1 = utility_calculate_distance(old1_loc(1), old1_loc(2), robot1_loc(1), robot1_loc(2));
-        dist2 = utility_calculate_distance(old2_loc(1), old2_loc(2), robot2_loc(1), robot2_loc(2));
+        dist1 = utility_calc_distance(old1_loc, robot1_loc);
+        dist2 = utility_calc_distance(old2_loc, robot2_loc);
         
         % If neither robot has moved much in a while then switch roles
         if(dist1 < 0.15 && dist2 < 0.15)
@@ -111,17 +111,21 @@ function v_c = strategy_switch_offense_and_defense(robot, ball, P, t)
     if(player_roles == normal)
         if(playtype == offense)
             v1 = play_rush_goal(attacker, ball, P);
+            %v1 = play_rush_goal_avoid_obstacles(attacker, defender, opponent, ball, P);
             v2 = skill_follow_ball_on_line(defender, ball, 0, P);
         else
             v1 = play_rush_goal(attacker, ball, P);
+            %v1 = play_rush_goal_avoid_obstacles(attacker, defender, opponent, ball, P);
             v2 = skill_guard_goal(defender, ball, P);
         end
     else
         if(playtype == offense)
             v2 = play_rush_goal(attacker, ball, P);
+            %v2 = play_rush_goal_avoid_obstacles(attacker, defender, opponent, ball, P);
             v1 = skill_follow_ball_on_line(defender, ball, 0, P);
         else
             v2 = play_rush_goal(attacker, ball, P);
+            %v2 = play_rush_goal_avoid_obstacles(attacker, defender, opponent, ball, P);
             v1 = skill_guard_goal(defender, ball, P);
         end
     end
@@ -152,6 +156,24 @@ function v = play_rush_goal(robot, ball, P)
     
   if norm(position-robot(1:2))<.21,
       v = skill_go_to_point_angle_corrected(ball, robot, P.goal, P);
+  else
+      v = skill_go_to_point(robot, position, P);
+  end
+
+end
+
+function v = play_rush_goal_avoid_obstacles(robot, defender, opponent, ball, P)
+  
+  % normal vector from ball to goal
+  n = P.goal-ball;
+  n = n/norm(n);
+  % compute position 10cm behind ball, but aligned with goal.
+  position = ball - 0.2*n;
+    
+  obstacle_info = utility_detect_obstacle(robot, defender, opponent, ball, P)
+    
+  if norm(position-robot(1:2))<.21,
+      v = skill_go_to_point_avoid_obstacles(ball, robot, position, P, obstacle_info);
   else
       v = skill_go_to_point(robot, position, P);
   end
@@ -248,45 +270,120 @@ function v=skill_go_to_point_angle_corrected(ball, robot, point, P)
     v = [vx; vy; omega];
 end
 
-function roles=skill_switch_roles(player_roles, myparams, robot)
-    if(player_roles == myparams.normal)
-        player_roles = myparams.reversed;
-        defender = robot(:,1);
-        attacker = robot(:,2);
+function v=skill_go_to_point_avoid_obstacles(ball, robot, point, P, obstacle_info)
+%     % control x position to stay on current line
+%     vx = -P.control_k_vx*(robot(1)-point(1));
+%     
+%     % control y position to match the ball's y-position
+%     vy = -P.control_k_vy*(robot(2)-point(2));
+% 
+%     % control angle to -pi/2
+%     theta_d = atan2(P.goal(2)-robot(2), P.goal(1)-robot(1));
+%     omega = -P.control_k_phi*(robot(3) - theta_d); 
+
+    left_obstacle = obstacle_info(1);
+    right_obstacle = obstacle_info(4);
+    if(left_obstacle == 1)
+        % intermediate is a point to the side of the obstacle
+        intermediate = [obstacle_info(2);obstacle_info(3)];
+        v = skill_go_to_point(robot, intermediate, P);
+    elseif(right_obstacle == 1)
+        % intermediate is a point to the side of the obstacle
+        intermediate = [obstacle_info(5);obstacle_info(6)];
+        v = skill_go_to_point(robot, intermediate, P);
     else
-        player_roles = myparams.normal;
-        attacker = robot(:,1);
-        defender = robot(:,2);
+        v = skill_go_to_point_angle_corrected(ball, robot, point, P)
     end
-    roles(1) = player_roles;
-    roles(2) = attacker(3);
-    roles(3) = attacker(2);
-    roles(4) = attacker(1);
-    roles(5) = defender(3);
-    roles(6) = defender(2);
-    roles(7) = defender(1);
 end
 
-function v=skill_go_to_point_avoid_obstacles(robot, point, P)
-    % control x position to stay on current line
-    vx = -P.control_k_vx*(robot(1)-point(1));
+%%%%%%%%%%%%%%%%%%% Utilities %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function result = utility_detect_obstacle(attacker, defender, opponents, ball, P)
+    % Set up names for all players
+    me = attacker(1:2);
+    teammate = defender(1:2);
+    enemy1 = opponents(1:2,1);
+    enemy2 = opponents(1:2,2);
     
-    % control y position to match the ball's y-position
-    vy = -P.control_k_vy*(robot(2)-point(2));
-
-    % control angle to -pi/2
-    theta_d = atan2(P.goal(2)-robot(2), P.goal(1)-robot(1));
-    omega = -P.control_k_phi*(robot(3) - theta_d); 
+    number_of_samples = 10;
     
-    v = [vx; vy; omega];
+    % find angle of slope perpendicular to slope of vector to the ball
+    vector = ball-me;
+    slope = vector(2)/vector(1);
+    perp_slope = (-1/slope);
+    angle = tan(perp_slope);
+    
+    % find coordinates of robot face corners when facing the ball
+    me_left_x = me(1) + (P.robot_radius*cos(angle));
+    me_left_y = me(2) - (P.robot_radius*sin(angle));
+    me_right_x = me(1) - (P.robot_radius*cos(angle));
+    me_right_y = me(2) + (P.robot_radius*sin(angle));
+    
+    ball_left_x = ball(1) + (P.robot_radius*cos(angle));
+    ball_left_y = ball(2) - (P.robot_radius*sin(angle));
+    ball_right_x = ball(1) - (P.robot_radius*cos(angle));
+    ball_right_y = ball(2) + (P.robot_radius*sin(angle));
+    
+    % find points along line followed by robot corners if it went straight
+    % to the ball
+    left_line_x = linspace(me_left_x, ball_left_x, number_of_samples);
+    left_line_y = linspace(me_left_y, ball_left_y, number_of_samples);
+    right_line_x = linspace(me_right_x, ball_right_x, number_of_samples);
+    right_line_y = linspace(me_right_y, ball_right_y, number_of_samples);
+    
+    left_line = [left_line_x;left_line_y];
+    right_line = [right_line_x;right_line_y];
+    
+    % state variables: obstacle is 1 if detected and 0 otherwise, sample
+    % num is the number of the sample that finds obstacle
+    left_obstacle = 0;
+    right_obstacle = 0;
+    left_sample_num = 1;
+    right_sample_num = 1;
+    
+    for i = 1:number_of_samples
+        if(utility_calc_distance(left_line(:,i), teammate) < P.robot_radius)
+            left_obstacle = 1;
+            left_sample_num = i;
+            break;
+        elseif(utility_calc_distance(left_line(:,i), enemy1) < P.robot_radius)
+            left_obstacle = 1;
+            left_sample_num = i;
+            break;
+        elseif(utility_calc_distance(left_line(:,i), enemy2) < P.robot_radius)
+            left_obstacle = 1;
+            left_sample_num = i;
+            break;
+        end
+    end
+    
+    for i = 1:number_of_samples
+        if(utility_calc_distance(right_line(:,i), teammate) < P.robot_radius)
+            right_obstacle = 1;
+            right_sample_num = i;
+            break;
+        elseif(utility_calc_distance(right_line(:,i), enemy1) < P.robot_radius)
+            right_obstacle = 1;
+            right_sample_num = i;
+            break;
+        elseif(utility_calc_distance(right_line(:,i), enemy2) < P.robot_radius)
+            right_obstacle = 1;
+            right_sample_num = i;
+            break;
+        end
+    end
+    
+    % the first item in each row (left_obstacle) says whether there was an
+    % obstacle detected (value=1) if so, the next two numbers are valid
+    % coordinates of the point on the opposite line next to the point that
+    % detected a robot
+    
+    result = [left_obstacle, right_line_x(left_sample_num), right_line_y(left_sample_num); right_obstacle, left_line_x(right_sample_num), left_line_y(right_sample_num)];
 end
 
-%%%%%%%%%%%%%%%%%%% Utilities %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
-
-function distance = utility_calculate_distance(item1_x, item1_y, item2_x, item2_y)
-    distance = sqrt((item1_x - item2_x)^2 + (item1_y - item2_y)^2);
+function distance = utility_calc_distance(point1, point2)
+    distance = sqrt((point1(1) - point2(1))^2 + (point1(2) - point2(2))^2);
 end
-
 
 %------------------------------------------
 % utility - saturate_velocity
@@ -368,11 +465,4 @@ function v = utility_get_ball_info(ball, P)
     v(1) = magnitude;
     v(2) = direction;
     v(3) = information_valid;
-end
-
-%%%%%%%%%%%%%%%%%%%% Other %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-function var=defines()
-    normal = 0;
-    reversed = 1;
 end
