@@ -31,7 +31,8 @@ function v_c=controller_home_full_state(uu,P)
     % current time
     t      = uu(1+NN);
     
-    v_c = strategy_switch_offense_and_defense(robot, opponent, ball, P, t);
+    v_c = strategy_strong_offense(robot, opponent, ball, P, t);
+    %v_c = strategy_switch_offense_and_defense(robot, opponent, ball, P, t);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% Strategies %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -102,8 +103,8 @@ function v_c = strategy_switch_offense_and_defense(robot, opponent, ball, P, t)
     offense = 1;
     playtype = offense;
     
-    % If the ball gets close to mid-field then go on defense
-    if(ball(1) < (P.field_width/8))
+    % If the ball gets behind 3/4 field then go on defense
+    if(ball(1) < (P.field_width/8)) %P.field_width/8
         playtype = defense;
     end
     
@@ -117,6 +118,7 @@ function v_c = strategy_switch_offense_and_defense(robot, opponent, ball, P, t)
             v1 = play_rush_goal(attacker, ball, P);
             %v1 = play_rush_goal_avoid_obstacles(attacker, defender, opponent, ball, P);
             v2 = skill_guard_goal(defender, ball, P);
+            %v2 = play_rush_goal(defender, ball, P);
         end
     else
         if(playtype == offense)
@@ -127,10 +129,34 @@ function v_c = strategy_switch_offense_and_defense(robot, opponent, ball, P, t)
             v2 = play_rush_goal(attacker, ball, P);
             %v2 = play_rush_goal_avoid_obstacles(attacker, defender, opponent, ball, P);
             v1 = skill_guard_goal(defender, ball, P);
+            %v1 = play_rush_goal(defender, ball, P);
         end
     end
     
     % output velocity commands to robots
+    v1 = utility_saturate_velocity(v1,P);
+    v2 = utility_saturate_velocity(v2,P);
+    v_c = [v1; v2];
+end
+
+function v_c = strategy_strong_offense(robot, opponent, ball, P, t)
+    defense = 0;
+    offense = 1;
+    playtype = offense;
+    
+    % If the ball gets behind 3/4 field then go on defense
+    if(ball(1) < (3*P.field_length/12)) %P.field_width/8
+        playtype = defense;
+    end
+    
+    v1 = play_rush_goal(robot(:,1), ball, P);
+    
+    if(playtype == offense)
+        v2 = skill_follow_ball_on_line(robot(:,2), ball, P.field_length/6, P);
+    else
+        v2 = play_rush_goal(robot(:,2), ball, P);
+    end
+    
     v1 = utility_saturate_velocity(v1,P);
     v2 = utility_saturate_velocity(v2,P);
     v_c = [v1; v2];
