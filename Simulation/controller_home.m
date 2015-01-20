@@ -233,6 +233,50 @@ function v=skill_guard_goal(robot, ball, P)
     v = [vx; vy; omega];
 end
 
+function v=skill_go_to_front_of_ball_and_face_ball(robot, ball, ballvel, P)
+    persistent first_run;
+    persistent mag;
+    persistent dir;
+    
+    if isempty(first_run)
+        mag = 0;
+        dir = 0;
+        first_run = 0;
+    end
+    
+    if ballvel(3) == 1
+        mag = ballvel(1);
+        dir = ballvel(2);
+    end
+    
+    point_in_front_of_ball = (P.robot_radius+P.ball_radius)*...
+        [cos(dir);sin(dir)] + ball;
+    angle_face_ball = dir + pi/4;
+    
+    v = skill_go_to_point_and_angle(robot, point_in_front_of_ball,...
+        angle_face_ball, P);
+end
+%-----------------------------------------
+% skill - go to point and angle
+%   follows the y-position of the ball, while maintaining x-position at
+%   x_pos.  Angle always faces the goal.
+
+function v=skill_go_to_point_and_angle(robot, point, angle, P)
+
+    % control x position to stay on current line
+    vx = -P.control_k_vx*(robot(1)-point(1));
+    
+    % control y position to match the ball's y-position
+    vy = -P.control_k_vy*(robot(2)-point(2));
+
+    % control angle to -pi/2
+    theta_d = angle;
+    omega = -P.control_k_phi*(robot(3) - theta_d); 
+    
+    v = [vx; vy; omega];
+end
+
+
 %-----------------------------------------
 % skill - go to point
 %   follows the y-position of the ball, while maintaining x-position at
@@ -398,10 +442,6 @@ function v = utility_saturate_velocity(v,P)
     if v(3) < -P.robot_max_omega, v(3) = -P.robot_max_omega; end
 end
 
-%ESTIMATEBALLVELOCITY Estimate the balls velocity based on current postion
-%   Take the diferential of the balls current and previous position. v(1) 
-%   is the balls velocity, v(2) is the current direction of the ball, v(3)
-%   indicates if the estimation is valid (1 for yes, 0 for no);
 function v = utility_get_ball_info(ball, P)
     % Persisitent Variables
     persistent first_run;
