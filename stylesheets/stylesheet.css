@@ -234,6 +234,7 @@ hr {
 }
 
 table {
+  font-size: .75em;
   border: 1px solid #373737;
   margin-bottom: 20px;
   text-align: left;
@@ -242,8 +243,9 @@ table {
 th {
   font-family: 'Lucida Grande', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   padding: 10px;
-  background: #373737;
+  background: #686868;
   color: #fff;
+  border-right: 1px solid #000;
  }
 
 td {
