@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="RobotSoccer : Custom-made silicon strikers">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>RobotSoccer</title>
+  </head>
+
+  <body>
+
+  <div class="markdown-body">
+      <h1>
+<a id="user-content-functional-specifications-for-robot-soccer" class="anchor" href="#functional-specifications-for-robot-soccer" aria-hidden="true"><span class="octicon octicon-link"></span></a>Functional Specifications for Robot Soccer</h1>
+
+<h2>
+<a id="user-content-introduction" class="anchor" href="#introduction" aria-hidden="true"><span class="octicon octicon-link"></span></a>Introduction</h2>
+
+<p>This document defines the features and specifications of our soccer-playing robots. It also analyzes customer needs and how well the product meets these needs. This document serves as an outline for our product, and will be updated as new information becomes available.</p>
+
+<h4>
+<a id="user-content-background" class="anchor" href="#background" aria-hidden="true"><span class="octicon octicon-link"></span></a>Background</h4>
+
+<p>Robot Soccer is an international phenomenon, with elite teams from all over the world gather to pit technique, strategy, and brawn against each other to earn victory on the soccer field. There are currently two international organizations that regulate robot soccer competitions: The <a href="http://en.wikipedia.org/wiki/Federation_of_International_Robot-soccer_Association">Federation of International Robot-soccer Association</a> (FIRA) and <a href="http://en.wikipedia.org/wiki/RoboCup">RoboCup</a>. Both of these organizations were founded in 1997 and have continued to gain international popularity.</p>
+
+<p>Brigham Young University also hosts a robot soccer competition. Our robot soccer project is designed to be a dominant and competitive team in our BYU competition.</p>
+
+<h4>
+<a id="user-content-product-description" class="anchor" href="#product-description" aria-hidden="true"><span class="octicon octicon-link"></span></a>Product Description</h4>
+
+<p>Robot soccer requires true system-level design. Our team must integrate a wireless communication system, computer vision, feedback control, real-time programming, artificial intelligence, and mechanical design. Second, the overall project is much too ambitious for a single student, so teamwork is essential.</p>
+
+<p>The overall layout of the project is shown in the figure below.</p>
+
+<p><img src="/lukehsiao/RobotSoccer/wiki/images/block-diagram.jpg"></p>
+
+<p>The robots will be competing 2 vs. 2 on small, walled soccer field. An overhead camera will provide images to each team's base computer to allow algorithms to compute the location and orientation of the four robots and the ball. This information will then be streamed via wireless communication to the individual robots, who posess the artificial intelligence to analyze the data and make a competitive play.</p>
+
+<p>Our project is to design the robot system, as well as the image processing software. These robots will be completely autonomous and will require no human interaction after being activated and placed on the playing field. The scope of our project will involve mechanical design, computer vision, motion control systems, artificial intelligence, and system architecture. Most importantly, all of these systems will work seamlessly together while following the pre-programmed game rules.</p>
+
+<h2>
+<a id="user-content-project-requirements" class="anchor" href="#project-requirements" aria-hidden="true"><span class="octicon octicon-link"></span></a>Project Requirements</h2>
+
+<p>Our project will need to meet requirements specified by both the BYU robot soccer competition and our customers. To design the best product possible, we gathered input from our customers and studied the competition rules. Our customers have provided several different contraints. Some are more important to the success of the project than others. Furthermore, some would require more resources than we have available for this project in our current timeframe. </p>
+
+<p>Our product cannot compromise in meeting game rules. Consequently, meeting all of the rule contraints are top priority. We then analyzed the customer requirements and prioritized them based on their importance to the success of the project.</p>
+
+<h4>
+<a id="user-content-mission-statement" class="anchor" href="#mission-statement" aria-hidden="true"><span class="octicon octicon-link"></span></a>Mission Statement</h4>
+
+<p>Our mission is to create a fully autonomous robot that through superior hardware and software design is capable of playing within specified game rules and outperforming the competition.</p>
+
+<h4>
+<a id="user-content-game-rules" class="anchor" href="#game-rules" aria-hidden="true"><span class="octicon octicon-link"></span></a>Game Rules</h4>
+
+<p>One set of requirements come directly from the rules of the BYU robot soccer competition:  </p>
+
+<ul class="task-list">
+<li>Robots must fit within a cylinder of 8-inch diameter and 10-inch height</li>
+<li>The ball is a standard golf ball, the color will be determined by majority vote.</li>
+<li>The playing field is 5 feet wide by 10 feet long. The sides of the field are angled so that a ball cannot get stuck against the sides or corners.</li>
+<li>Goals will be 2 feet wide.</li>
+<li>Robots must be designed in a way that will not damage other robots, the playing field, or human spectators.
+
+<ul class="task-list">
+<li>Kickers are not allowed to shoot the ball hard enough to damage other players.</li>
+<li>Robots must avoid collisions.</li>
+<li>Any contact with a defender while in the defense area will be a violation</li>
+<li>Outside the defense area, contact that noticeably changes a player's orientation, position, or motion will be a violation.</li>
+</ul>
+</li>
+<li>We will not observe the traditional offsides rule.</li>
+<li>Robots cannot drop parts on the field</li>
+<li>Robots are not allowed to fix the ball to their frame or encompass the ball in any way that prevents access by other players.</li>
+</ul>
+
+<h4>
+<a id="user-content-point-evaluation-of-customer-needs" class="anchor" href="#point-evaluation-of-customer-needs" aria-hidden="true"><span class="octicon octicon-link"></span></a>Point Evaluation of Customer Needs</h4>
+
+<p>The table below specifies our customers requirements. We have ranked them by priority. </p>
+
+<p>Priority: 1 = Very High, 2 = High, 3 = Moderate, 4 = Low</p>
+
+<table>
+<thead>
+<tr>
+<th align="center">Req. #</th>
+<th align="left">Customer Statement</th>
+<th align="left">Interpreted Need</th>
+<th align="center">Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">1</td>
+<td align="left">Follow the rules of the game</td>
+<td align="left">Robot's AI must abide the BYU competition rules.</td>
+<td align="center">1</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="left">Win the game</td>
+<td align="left">Robot must be competitive and be able to score on the opposing team.</td>
+<td align="center">1</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="left">Be able to kick into the goal from any field position</td>
+<td align="left">Robot must be able to find goal and kick with enough strength to reach the goal.</td>
+<td align="center">3</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="left">Batteries last the whole match</td>
+<td align="left">Robot should be power efficient to maximize battery life.</td>
+<td align="center">1</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="left">Robots work together as a team</td>
+<td align="left">Robots should be aware of each other and use coordinated 2-robot tactics.</td>
+<td align="center">2</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="left">Robots can block shots from going in goal</td>
+<td align="left">Robots can maneuver between ball and goal from any arbitrary position.</td>
+<td align="center">1</td>
+</tr>
+<tr>
+<td align="center">7</td>
+<td align="left">Robots are agile and move quickly</td>
+<td align="left">Robots can move in any direction, change direction quickly, and have high speed.</td>
+<td align="center">3</td>
+</tr>
+<tr>
+<td align="center">8</td>
+<td align="left">Robots are robust</td>
+<td align="left">Robots can survive being hit by ball or other robots without issues.</td>
+<td align="center">3</td>
+</tr>
+<tr>
+<td align="center">9</td>
+<td align="left">Robots look cool</td>
+<td align="left">Robots appearence well designed and constructed with precision.</td>
+<td align="center">4</td>
+</tr>
+<tr>
+<td align="center">10</td>
+<td align="left">Robots are not expensive</td>
+<td align="left">Robots use commercially available, low-cost components.</td>
+<td align="center">3</td>
+</tr>
+<tr>
+<td align="center">11</td>
+<td align="left">Robots have an easy to use API</td>
+<td align="left">Software is well organized and clear documentation is available.</td>
+<td align="center">2</td>
+</tr>
+<tr>
+<td align="center">12</td>
+<td align="left">Easy to add and modify tactics</td>
+<td align="left">Software is extensible so tactics can be added/modified without breaking it.</td>
+<td align="center">2</td>
+</tr>
+<tr>
+<td align="center">13</td>
+<td align="left">High cross compatibility with common protocols</td>
+<td align="left">Common communication standards and software are used (e.g., WiFi, Linux, C++)</td>
+<td align="center">4</td>
+</tr>
+<tr>
+<td align="center">14</td>
+<td align="left">The system is simple</td>
+<td align="left">Software has a minimal amount of code and the robot has minimal components.</td>
+<td align="center">2</td>
+</tr>
+<tr>
+<td align="center">15</td>
+<td align="left">Vision algorithms are accurate and fast</td>
+<td align="left">Computer vision software can precisely and accurate location robots and ball.</td>
+<td align="center">1</td>
+</tr>
+<tr>
+<td align="center">16</td>
+<td align="left">Robots can dribble the ball</td>
+<td align="left">Robot must maintain control of the ball when maneuvering.</td>
+<td align="center">1</td>
+</tr>
+</tbody>
+</table>
+
+<h2>
+<a id="user-content-product-specifications" class="anchor" href="#product-specifications" aria-hidden="true"><span class="octicon octicon-link"></span></a>Product Specifications</h2>
+
+<p>Measurable engineering characteristics and target values are critical for our design. This section outlines both the metrics we will use along with ideal and actual results.</p>
+
+<h4>
+<a id="user-content-metrics" class="anchor" href="#metrics" aria-hidden="true"><span class="octicon octicon-link"></span></a>Metrics</h4>
+
+<table>
+<thead>
+<tr>
+<th align="center">Metric #</th>
+<th align="left">Req. #</th>
+<th align="left">Metric</th>
+<th align="center">Ideal</th>
+<th align="center">Margin</th>
+<th align="center">Units</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">1</td>
+<td align="left">2,6</td>
+<td align="left">Goals scored minus conceded goals</td>
+<td align="center">&gt;2</td>
+<td align="center">&gt;0</td>
+<td align="center">goals</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="left">6</td>
+<td align="left">Percentage of shots blocked given random speed and location of robot</td>
+<td align="center">&gt;99</td>
+<td align="center">&gt;80</td>
+<td align="center">percent</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="left">15,6</td>
+<td align="left">Maximum difference between calculated ball position and actual position</td>
+<td align="center">&lt;1</td>
+<td align="center">&lt;3</td>
+<td align="center">cm</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="left">5,3,15</td>
+<td align="left">Maximum difference between calculated robot position and actual position</td>
+<td align="center">&lt;1</td>
+<td align="center">&lt;3</td>
+<td align="center">cm</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="left">10</td>
+<td align="left">Maximum total cost of all components of both robots</td>
+<td align="center">&lt;25</td>
+<td align="center">&lt;50</td>
+<td align="center">USD</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="left">14</td>
+<td align="left">Maximum number of physical components in each robot</td>
+<td align="center">&lt;10</td>
+<td align="center">&lt;15</td>
+<td align="center">components</td>
+</tr>
+<tr>
+<td align="center">7</td>
+<td align="left">7,6</td>
+<td align="left">Maximum speed of robot in one direction</td>
+<td align="center">&gt;200</td>
+<td align="center">&gt;100</td>
+<td align="center">cm/s</td>
+</tr>
+<tr>
+<td align="center">8</td>
+<td align="left">14,11,12</td>
+<td align="left">Number of lines of code (total)</td>
+<td align="center">2000</td>
+<td align="center">&lt;3500</td>
+<td align="center">lines</td>
+</tr>
+<tr>
+<td align="center">9</td>
+<td align="left">7,4</td>
+<td align="left">Maximum weight of a single robot</td>
+<td align="center">&lt;5</td>
+<td align="center">&lt;8</td>
+<td align="center">kg</td>
+</tr>
+<tr>
+<td align="center">10</td>
+<td align="left">4</td>
+<td align="left">Mimimum battery life while robot spins in place</td>
+<td align="center">&gt;60</td>
+<td align="center">&gt;30</td>
+<td align="center">minutes</td>
+</tr>
+<tr>
+<td align="center">11</td>
+<td align="left">16,7</td>
+<td align="left">Maximum distance from ball to dribbler while moving at top speed</td>
+<td align="center">&lt;2</td>
+<td align="center">&lt;5</td>
+<td align="center">cm</td>
+</tr>
+<tr>
+<td align="center">12</td>
+<td align="left">8</td>
+<td align="left">Minimum force that sides and top surface of robot can withstand uninjured</td>
+<td align="center">&gt;8</td>
+<td align="center">&gt;5</td>
+<td align="center">newtons</td>
+</tr>
+<tr>
+<td align="center">13</td>
+<td align="left">3</td>
+<td align="left">Percentage of goals when shot from random location by stationary robot</td>
+<td align="center">100</td>
+<td align="center">&gt;80</td>
+<td align="center">percent</td>
+</tr>
+<tr>
+<td align="center">14</td>
+<td align="left">7</td>
+<td align="left">Minimum acceleration in any direction</td>
+<td align="center">&gt;30</td>
+<td align="center">&gt;15</td>
+<td align="center">cm/s<sup>2</sup>
+</td>
+</tr>
+<tr>
+<td align="center">15</td>
+<td align="left">1</td>
+<td align="left"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">16</td>
+<td align="left">9</td>
+<td align="left"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">17</td>
+<td align="left">13</td>
+<td align="left"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+</tbody>
+</table>
+
+<h4>
+<a id="user-content-analysis" class="anchor" href="#analysis" aria-hidden="true"><span class="octicon octicon-link"></span></a>Analysis</h4>
+
+<p>Here, we list a description of each metric and the reason we have chosen this measure for Robot Soccer.</p>
+
+<h2>
+<a id="user-content-linking-project-specifications-and-customer-needs" class="anchor" href="#linking-project-specifications-and-customer-needs" aria-hidden="true"><span class="octicon octicon-link"></span></a>Linking Project Specifications and Customer Needs</h2>
+
+<h2>
+<a id="user-content-development-schedule" class="anchor" href="#development-schedule" aria-hidden="true"><span class="octicon octicon-link"></span></a>Development Schedule</h2>
+
+<p>January 7:  </p>
+
+<ul class="task-list">
+<li>Obtain all electronics and parts from the Shop.<br>
+</li>
+<li>Obtain motors, motor drivers, and control boards from the Shop.<br>
+</li>
+<li>Obtain cameras from the Shop.<br>
+</li>
+<li>Obtain simulator from the website and make sure you can run it.<br>
+</li>
+</ul>
+
+<p>January 14:</p>
+
+<ul class="task-list">
+<li>Preliminary design of body. Cut body parts.<br>
+</li>
+<li>Motors can spin at user specified rate.<br>
+</li>
+<li>Ability to capture images and perform color segmentation.<br>
+</li>
+<li>Implement one offensive and one defensive strategy on simulator.<br>
+</li>
+</ul>
+
+<p>January 21:</p>
+
+<ul class="task-list">
+<li>One robot assembled and parts connected.<br>
+</li>
+<li>Robot can spin in place.<br>
+</li>
+<li>Ability to detect LEDs on robots from range.<br>
+</li>
+<li>Successfully compete in simulator competition using several different offensive and defensive strategies.<br>
+</li>
+</ul>
+
+<p>January 28:</p>
+
+<ul class="task-list">
+<li>Vision jersey developed and assembled.<br>
+</li>
+<li>Robot moves at commanded linear speed v, and angular rate omega.<br>
+</li>
+<li>Four cameras in place and communicating via ROS architecture.<br>
+</li>
+<li>First thin thread - Obtain state estimates from vision process communicate to robots, robots spin in response</li>
+</ul>
+
+<p>February 4:</p>
+
+<ul class="task-list">
+<li>Successfully complete skills competition</li>
+<li>Find current position and orientation of robots on field, as well as position of ball. Assume everything is static</li>
+<li>System architecture ready for skills competition</li>
+</ul>
+
+<h2>
+<a id="user-content-summary" class="anchor" href="#summary" aria-hidden="true"><span class="octicon octicon-link"></span></a>Summary</h2>
+
+    </div>
+
+  </body>
+</html>
