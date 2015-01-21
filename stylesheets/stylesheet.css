@@ -252,6 +252,9 @@ td {
   padding: 10px;
   border: 1px solid #373737;
  }
+  #quicknav td {
+    width: 25%;
+  }
 
 form {
   background: #f2f2f2;
