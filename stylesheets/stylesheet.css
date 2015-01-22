@@ -157,6 +157,12 @@ p img {
   border: none;
 }
 
+  @media print {
+    #blockDiagram {
+      width: 45%;
+    }
+  }
+
 pre, code {
   width: 100%;
   color: #222;
