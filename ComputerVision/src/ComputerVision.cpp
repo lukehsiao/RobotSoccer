@@ -3,7 +3,10 @@
 // Author      : Luke Hsiao, Clover Wu
 // Version     :
 // Copyright   : Copyright 2015 Team Vektor Krum
-// Description : Hello World in C++, Ansi-style
+// Description : This program receives video data from the Soccer Field's
+//               overhead camera, processes the images, and outputs
+//               the (x,y) positions of all 4 robots, the ball, and all
+//               robot's orientations.
 //============================================================================
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
