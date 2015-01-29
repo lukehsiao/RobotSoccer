@@ -160,6 +160,10 @@ p img {
   #blockDiagram {
      width: 55%;
   }
+  
+  #decisionTable {
+     width: 500px;
+  }
 
 
 pre, code {
