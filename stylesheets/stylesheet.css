@@ -156,7 +156,9 @@ p img {
   text-align: center;
   border: none;
 }
-
+  #table {
+     max-width: 500px;
+  }
 pre, code {
   width: 100%;
   color: #222;
