@@ -9,8 +9,8 @@
 #include "Ball.h"
 
 Ball::Ball() : Object() {
-  setHSVmin(cv::Scalar(22,0,174));
-  setHSVmax(cv::Scalar(38,255,255));
+  setHSVmin(cv::Scalar(22,70,0));
+  setHSVmax(cv::Scalar(63,255,255));
 }
 
 Ball::~Ball() {

@@ -100,7 +100,7 @@ void drawRobot(Robot newRobot, Mat &frame) {
   putText(frame,"(" + intToString(x)+ "," + intToString(y) + ")",
           Point(x,y+20),1,1,Scalar(0,255,0));
   putText(frame, "Robot", Point(x+17,y+35),1,1,Scalar(0,255,0));
-  putText(frame, " Team " + team, Point(x+17,y+50),1,1,Scalar(0,255,0));
+  putText(frame, "Team " + team, Point(x+17,y+50),1,1,Scalar(0,255,0));
   putText(frame, "angle: " + angle, Point(x+17,y+65),1,1,Scalar(0,255,0));
 }
 
@@ -306,7 +306,7 @@ int main(int argc, char* argv[]) {
 	//video capture object to acquire webcam feed
 	VideoCapture capture;
 	//open capture object at location zero (default location for webcam)
-	capture.open("ball-2dot.mp4");
+	capture.open("demo.mp4");
 
 	//set height and width of capture frame
 	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
@@ -327,7 +327,7 @@ int main(int argc, char* argv[]) {
 		  // Erode, then dialate to get a cleaner image
 		  morphOps(threshold);
 
-		  imshow(windowName2,threshold);
+		  imshow(windowName2,threshold); waitKey(0);
 		  Robot home1(HOME);
 		  trackFilteredRobot(home1, threshold,HSV,cameraFeed);
 		}
@@ -358,7 +358,7 @@ int main(int argc, char* argv[]) {
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
-		waitKey(30);
+		waitKey(100);
 	}
 	return 0;
 }

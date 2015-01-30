@@ -15,8 +15,8 @@ Robot::Robot(int TEAM) : Object() {
   Robot::angle = 0;
   // Hard code team colors here
   if (team == HOME) {
-    setHSVmin(cv::Scalar(78,57,90));
-    setHSVmax(cv::Scalar(256,255,225));
+    setHSVmin(cv::Scalar(165,30,0));
+    setHSVmax(cv::Scalar(230,255,255));
   }
   else if (team == AWAY) {
     setHSVmin(cv::Scalar(0,0,0));
