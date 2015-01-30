@@ -97,9 +97,9 @@ void drawRobot(Robot newRobot, Mat &frame) {
   circle(frame,cv::Point(x,y),10,cv::Scalar(0,0,255));
   putText(frame,"(" + intToString(x)+ "," + intToString(y) + ")",
           Point(x,y+20),1,1,Scalar(0,255,0));
-  putText(frame, "Robot", Point(x+20,y+35),1,1,Scalar(0,255,0));
-  putText(frame, "Team " + team, Point(x+20,y+60),1,1,Scalar(0,255,0));
-  putText(frame, "angle: " + angle, Point(x+20,y+75),1,1,Scalar(0,255,0));
+  putText(frame, "Robot", Point(x+17,y+35),1,1,Scalar(0,255,0));
+  putText(frame, " Team " + team, Point(x+17,y+50),1,1,Scalar(0,255,0));
+  putText(frame, "angle: " + angle, Point(x+17,y+65),1,1,Scalar(0,255,0));
 }
 
 // Draws all robot objects that are found
@@ -118,21 +118,68 @@ void morphOps(Mat &thresh) {
 	//the element chosen here is a 3px by 3px rectangle
 	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(3,3));
 	//dilate with larger element so make sure object is nicely visible
-	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(8,8));
+	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(10,10));
 
 	erode(thresh,thresh,erodeElement);
-	erode(thresh,thresh,erodeElement);
+  dilate(thresh,thresh,dilateElement);
 
+	erode(thresh,thresh,erodeElement);
 	dilate(thresh,thresh,dilateElement);
-	dilate(thresh,thresh,dilateElement);
+}
+
+// Function specific for tracking robots.
+void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
+  Mat temp;
+  threshold.copyTo(temp);
+
+  //these two vectors needed for output of findContours
+  vector< vector<Point> > contours;
+  vector<Vec4i> hierarchy;
+
+  //find contours of filtered image using openCV findContours function
+  findContours(temp,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
+
+  //use moments method to find our filtered object
+  //double refArea = 0;
+  bool objectFound = false;
+  if (hierarchy.size() > 0) {
+    int numObjects = hierarchy.size();
+    //if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
+    if(numObjects<MAX_NUM_OBJECTS){
+      for (int index = 0; index >= 0; index = hierarchy[index][0]) {
+
+        Moments moment = moments((Mat)contours[index]);
+        double area = moment.m00;
+
+        //if the area is less than 20 px by 20px then it is probably just noise
+        //if the area is the same as the 3/2 of the image size, probably just a bad filter
+        //we only want the object with the largest area so we safe a reference area each
+        //iteration and compare it to the area in the next iteration.
+        if(area>MIN_OBJECT_AREA){
+          robot.set_x_pos(moment.m10/area);
+          robot.set_y_pos(moment.m01/area);
+
+
+          objectFound = true;
+        }
+        else {
+          objectFound = false;
+        }
+      }
+      //let user know you found an object
+      if(objectFound ==true){
+        //draw object location on screen
+        drawRobot(robot,cameraFeed);}
+    }
+    else {
+      putText(cameraFeed,"TOO MUCH NOISE! ADJUST FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
+    }
+  }
 }
 
 // Finds the contours (outlines) of the now filtered image and determine's its
 // center by examining its moments.
-void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
-
-	Ball ball;
-	vector<Robot> allRobots; //stores all robot locations
+void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
 
 	Mat temp;
 	threshold.copyTo(temp);
@@ -145,7 +192,7 @@ void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
 	findContours(temp,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
 
 	//use moments method to find our filtered object
-	double refArea = 0;
+	//double refArea = 0;
 	bool objectFound = false;
 	if (hierarchy.size() > 0) {
 		int numObjects = hierarchy.size();
@@ -181,6 +228,95 @@ void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
 	}
 }
 
+void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
+
+  int x, y;
+
+  Mat temp;
+  threshold.copyTo(temp);
+
+  //these two vectors needed for output of findContours
+  vector< vector<Point> > contours;
+  vector<Vec4i> hierarchy;
+
+  //find contours of filtered image using openCV findContours function
+  findContours(temp,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
+
+  //use moments method to find our filtered object
+  double refArea = 0;
+  bool objectFound = false;
+  if (hierarchy.size() > 0) {
+    int numObjects = hierarchy.size();
+    //if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
+    if(numObjects<MAX_NUM_OBJECTS){
+      for (int index = 0; index >= 0; index = hierarchy[index][0]) {
+
+        Moments moment = moments((Mat)contours[index]);
+        double area = moment.m00;
+
+        //if the area is less than 20 px by 20px then it is probably just noise
+        //if the area is the same as the 3/2 of the image size, probably just a bad filter
+        //we only want the object with the largest area so we safe a reference area each
+        //iteration and compare it to the area in the next iteration.
+        if(area>MIN_OBJECT_AREA){
+          x = moment.m10/area;
+          y = moment.m01/area;
+          objectFound = true;
+        }
+        else {
+          objectFound = false;
+        }
+      }
+      //let user know you found an object
+      if(objectFound ==true){
+        //draw object location on screen
+        drawObject(x, y,cameraFeed);}
+
+    }
+    else {
+      putText(cameraFeed,"TOO MUCH NOISE! ADJUST FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
+    }
+  }
+}
+
+// Below is sample C++ code to find a large circle, then the angle
+//if (contours.size() == 2)
+//{
+//  /*
+//  for( int i = 0; i < contours.size(); i++ )
+//   {
+//     Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+//     drawContours( imgOriginal, contours, i, color, 2, 8, hierarchy, 0, Point(0,0) );
+//   }
+//  */
+//  if (contourArea(contours[0]) < contourArea(contours[1])){c1 = 1; c2 = 0;}else {c1 = 0; c2 = 1;} //Identify the biggest circle
+//
+//  vector<Moments> mu(contours.size() );   /// Get the moments
+//  for( int i = 0; i < contours.size(); i++ )
+//    { mu[i] = moments( contours[i], false ); }
+//
+//  vector<Point2f> mc( contours.size() );    ///  Get the mass centers
+//  for( int i = 0; i < contours.size(); i++ )
+//    { mc[i] = Point2f( mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00 );
+//    //circle( imgOriginal, mc[i], 6, Scalar(255, 0, 0), -1, 8, 0 );
+//    }
+//
+//  circle( imgOriginal, mc[c1], 8, Scalar(255, 0, 0), -1, 8, 0 );  //Mark only on big circle
+//  line(imgOriginal, mc[c1], mc[c2], Scalar(0, 0, 255), 4, 8, 0);  //Connect Mass Center
+//  cout <<", "<< mc[c1] ;  // only center for big circle
+//
+//
+//  float angle = (atan2(mc[c2].y - mc[c1].y, mc[c2].x - mc[c1].x))*180/PI; //Determine the angle from horizontal line
+//  //cout << " ,& " <<mc[c2].y - mc[c1].y<<endl;
+//  if (mc[c2].y - mc[c1].y >=  0)
+//      {cout << " ,* " <<360 - angle<<endl;}
+//  else cout << " , " <<angle*(-1)<<endl;
+//}
+//else {
+//  cout << " No mark detected." <<endl;
+//}
+
+
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
 	bool calibrationMode = false;
@@ -197,7 +333,7 @@ int main(int argc, char* argv[]) {
 	//video capture object to acquire webcam feed
 	VideoCapture capture;
 	//open capture object at location zero (default location for webcam)
-	capture.open(0);
+	capture.open("ball-2dot.mp4");
 
 	//set height and width of capture frame
 	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
@@ -233,7 +369,14 @@ int main(int argc, char* argv[]) {
 		  inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
 		  // Erode, then dialate to get a cleaner image
 		  morphOps(threshold);
-		  trackFilteredObject(threshold,HSV,cameraFeed);
+		  trackFilteredBall(ball,threshold,HSV,cameraFeed);
+
+      cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
+      inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
+      // Erode, then dialate to get a cleaner image
+      morphOps(threshold);
+      trackFilteredRobot(home1,threshold,HSV,cameraFeed);
+
 		}
 
 
