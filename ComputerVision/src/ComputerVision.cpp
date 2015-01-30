@@ -107,7 +107,7 @@ void drawRobot(Robot newRobot, Mat &frame) {
 // Draws all robot objects that are found
 void drawAllRobots(vector<Robot> robots_to_draw, Mat &frame) {
   // Iterate through all found robots and draw them
-  for (int i = 0; i < robots_to_draw.size(); i++) {
+  for (unsigned i = 0; i < robots_to_draw.size(); i++) {
     drawRobot(robots_to_draw.at(i), frame);
   }
 }
@@ -158,13 +158,13 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
 
     // Get moments
     vector<Moments> robotMoments(contours.size());
-    for (int i = 0; i < contours.size(); i++) {
+    for (unsigned i = 0; i < contours.size(); i++) {
       robotMoments[i] = moments(contours[i], false);
     }
 
     // Find centers
     vector<Point2f> centerPoints(contours.size());
-    for (int i = 0; i < contours.size(); i++) {
+    for (unsigned i = 0; i < contours.size(); i++) {
       centerPoints[i] = Point2f(robotMoments[i].m10/robotMoments[i].m00,
                                 robotMoments[i].m01/robotMoments[i].m00);
     }
