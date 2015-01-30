@@ -238,8 +238,14 @@ int main(int argc, char* argv[]) {
 		  Ball ball;
 
 		  // Hard-code threshold values for recognizing YELLOW
-		  ball.setHSVmin(cv::Scalar(22,71,0));
-		  ball.setHSVmax(Scalar(38,255,255));
+//		  ball.setHSVmin(Scalar(22,71,0));
+//		  ball.setHSVmax(Scalar(38,255,255));
+
+		  // Hard-code home colors
+
+
+		  // Hard code away colors
+
 
       cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
       inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);

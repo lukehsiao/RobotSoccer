@@ -10,8 +10,18 @@
 
 using namespace cv;
 
-Robot::Robot() : Object() {
-  Robot::team = 0;
+Robot::Robot(int TEAM) : Object() {
+  Robot::team = TEAM;
+
+  // Hard code team colors here
+  if (team == HOME) {
+    setHSVmin(cv::Scalar(0,0,0));
+    setHSVmax(cv::Scalar(255,255,255));
+  }
+  else if (team == AWAY) {
+    setHSVmin(cv::Scalar(0,0,0));
+    setHSVmax(cv::Scalar(255,255,255));
+  }
 }
 
 Robot::~Robot() {
