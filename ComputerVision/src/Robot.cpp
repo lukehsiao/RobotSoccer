@@ -12,7 +12,7 @@ using namespace cv;
 
 Robot::Robot(int TEAM) : Object() {
   Robot::team = TEAM;
-
+  Robot::angle = 0;
   // Hard code team colors here
   if (team == HOME) {
     setHSVmin(cv::Scalar(0,0,0));

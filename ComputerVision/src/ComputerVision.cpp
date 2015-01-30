@@ -221,37 +221,28 @@ int main(int argc, char* argv[]) {
 		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
 		if(calibrationMode==true) {
-      //if in calibration mode, we track objects based on the HSV slider values.
-      cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
-      inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
+		  //if in calibration mode, we track objects based on the HSV slider values.
+		  cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
+		  inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
 
-      // Erode, then dialate to get a cleaner image
-      morphOps(threshold);
+		  // Erode, then dialate to get a cleaner image
+		  morphOps(threshold);
 
-      imshow(windowName2,threshold);
-      trackFilteredObject(threshold,HSV,cameraFeed);
+		  imshow(windowName2,threshold);
+		  trackFilteredObject(threshold,HSV,cameraFeed);
 		}
 		else {
 		  // When NOT in calibration mode, use actual hard-coded color values
-		  Robot home1, home2;
-		  Robot away1, away2;
+		  Robot home1(HOME), home2(HOME);
+		  Robot away1(AWAY), away2(AWAY);
 		  Ball ball;
 
-		  // Hard-code threshold values for recognizing YELLOW
-//		  ball.setHSVmin(Scalar(22,71,0));
-//		  ball.setHSVmax(Scalar(38,255,255));
 
-		  // Hard-code home colors
-
-
-		  // Hard code away colors
-
-
-      cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
-      inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
-      // Erode, then dialate to get a cleaner image
-      morphOps(threshold);
-      trackFilteredObject(threshold,HSV,cameraFeed);
+		  cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
+		  inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
+		  // Erode, then dialate to get a cleaner image
+		  morphOps(threshold);
+		  trackFilteredObject(threshold,HSV,cameraFeed);
 		}
 
 

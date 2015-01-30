@@ -16,7 +16,7 @@
 
 class Robot: public Object {
   public:
-    Robot();
+    Robot(int TEAM);
     virtual ~Robot();
 
     // Setters and Getters
