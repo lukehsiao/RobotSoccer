@@ -129,7 +129,8 @@ void morphOps(Mat &thresh) {
 	dilate(thresh,thresh,dilateElement);
 }
 
-// Function specific for tracking robots.
+// Function specific for tracking robots. Will calculate the center of the robot as
+// well as the it's angle in relation to the horizontal.
 void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
   Mat temp;
   threshold.copyTo(temp);
@@ -144,6 +145,7 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
   findContours(temp,contours,hierarchy,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE );
 
   //use moments method to find our filtered object
+  //TODO(lukehsiao) This WILL break if there are more than 2 objects found. Segmentation has to be really good.
   if (contours.size() == 2) {
 
     // Identify the bigger object
@@ -188,6 +190,7 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
       intAngle = 360-intAngle;
     }
 
+    // TODO Filtering bad data (if the change in xpos or ypos is too large, ignore data
     // Set Robot variables
     robot.setAngle(intAngle);
     robot.set_x_pos((int)centerPoints[c1].x);
@@ -247,10 +250,9 @@ void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
 	}
 }
 
+// Used for tracking or calibrating to a generic colored object
 void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
-
   int x, y;
-
   Mat temp;
   threshold.copyTo(temp);
 
@@ -298,7 +300,6 @@ void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
   }
 }
 
-
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
 	bool calibrationMode = false;
@@ -315,7 +316,7 @@ int main(int argc, char* argv[]) {
 	//video capture object to acquire webcam feed
 	VideoCapture capture;
 	//open capture object at location zero (default location for webcam)
-	capture.open("demo2.mp4");
+	capture.open("demo.mp4");
 
 	//set height and width of capture frame
 	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
@@ -346,8 +347,6 @@ int main(int argc, char* argv[]) {
 		  Robot away1(AWAY), away2(AWAY);
 		  Ball ball;
 
-
-
 		  inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
 		  // Erode, then dialate to get a cleaner image
 		  morphOps(threshold);
@@ -359,11 +358,7 @@ int main(int argc, char* argv[]) {
       trackFilteredRobot(home1,threshold,HSV,cameraFeed);
 
 		}
-
-
-
 		imshow(windowName,cameraFeed);
-		//imshow(windowName1,HSV);
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
