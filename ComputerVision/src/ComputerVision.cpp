@@ -179,8 +179,17 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
     float angle = (atan2(centerPoints[c2].y - centerPoints[c1].y,
                          centerPoints[c2].x - centerPoints[c1].x))*(180/PI);
 
+    //Convert to int
+    int intAngle = (int) angle;
+    if (intAngle <= 0) {
+      intAngle = intAngle * (-1); // make positive again
+    }
+    else {
+      intAngle = 360-intAngle;
+    }
+
     // Set Robot variables
-    robot.setAngle((int)angle);
+    robot.setAngle(intAngle);
     robot.set_x_pos((int)centerPoints[c1].x);
     robot.set_y_pos((int)centerPoints[c1].y);
     drawRobot(robot, cameraFeed);
@@ -306,7 +315,7 @@ int main(int argc, char* argv[]) {
 	//video capture object to acquire webcam feed
 	VideoCapture capture;
 	//open capture object at location zero (default location for webcam)
-	capture.open("demo.mp4");
+	capture.open("demo2.mp4");
 
 	//set height and width of capture frame
 	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
