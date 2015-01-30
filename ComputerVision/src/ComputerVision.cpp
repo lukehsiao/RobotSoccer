@@ -192,7 +192,7 @@ void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
 
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
-	bool calibrationMode = true;
+	bool calibrationMode = false;
 	
 	//Matrix to store each frame of the webcam feed
 	Mat cameraFeed;
@@ -233,13 +233,13 @@ int main(int argc, char* argv[]) {
 		}
 		else {
 		  // When NOT in calibration mode, use actual hard-coded color values
-
 		  Robot home1, home2;
 		  Robot away1, away2;
 		  Ball ball;
 
-		  ball.setHSVmin(cv::Scalar(0,0,0));
-		  ball.setHSVmin(Scalar(255,255,255));
+		  // Hard-code threshold values for recognizing YELLOW
+		  ball.setHSVmin(cv::Scalar(22,71,0));
+		  ball.setHSVmax(Scalar(38,255,255));
 
       cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
       inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
