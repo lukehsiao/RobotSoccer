@@ -16,6 +16,7 @@
 #include <opencv/cv.h>
 #include "Ball.h"
 #include "Robot.h"
+#include "Object.h"
 
 using namespace cv;
 
@@ -230,6 +231,24 @@ int main(int argc, char* argv[]) {
       imshow(windowName2,threshold);
       trackFilteredObject(threshold,HSV,cameraFeed);
 		}
+		else {
+		  // When NOT in calibration mode, use actual hard-coded color values
+
+		  Robot home1, home2;
+		  Robot away1, away2;
+		  Ball ball;
+
+		  ball.setHSVmin(cv::Scalar(0,0,0));
+		  ball.setHSVmin(Scalar(255,255,255));
+
+      cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
+      inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
+      // Erode, then dialate to get a cleaner image
+      morphOps(threshold);
+      trackFilteredObject(threshold,HSV,cameraFeed);
+		}
+
+
 
 		imshow(windowName,cameraFeed);
 		//imshow(windowName1,HSV);

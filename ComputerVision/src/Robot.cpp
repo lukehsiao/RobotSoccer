@@ -8,9 +8,9 @@
 
 #include "Robot.h"
 
-Robot::Robot() {
-  Robot::x_pos = 0;
-  Robot::y_pos = 0;
+using namespace cv;
+
+Robot::Robot() : Object() {
   Robot::team = 0;
 }
 
@@ -19,22 +19,6 @@ Robot::~Robot() {
 }
 
 // Setters and Getters
-void Robot::set_x_pos(int x) {
-  Robot::x_pos = x;
-}
-
-int Robot::get_x_pos() {
-  return Robot::x_pos;
-}
-
-void Robot::set_y_pos(int x) {
-  Robot::x_pos = x;
-}
-
-int Robot::get_y_pos() {
-  return Robot::y_pos;
-}
-
 void Robot::setAngle(int newAngle) {
   Robot::angle = newAngle;
 }

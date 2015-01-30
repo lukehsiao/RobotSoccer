@@ -9,24 +9,16 @@
 #ifndef BALL_H_
 #define BALL_H_
 
-class Ball {
-public:
+#include "Object.h"
 
-	// Constructor
-	Ball();
+class Ball: public Object {
+  public:
 
-	// Destructor
-	virtual ~Ball();
+    // Constructor
+    Ball();
 
-	// Setters and Getters
-	void set_x_pos(int x);
-	int get_x_pos();
-
-	void set_y_pos(int x);
-	int get_y_pos();
-
-private:
-	int x_pos, y_pos;
+    // Destructor
+    virtual ~Ball();
 };
 
 #endif /* BALL_H_ */
