@@ -110,6 +110,14 @@ void drawRobot(Robot newRobot, Mat &frame) {
   putText(frame, "angle: " + angle, Point(x+20,y+75),1,1,Scalar(0,255,0));
 }
 
+// Draws all robot objects that are found
+void drawAllRobots(vector<Robot> robots_to_draw, Mat &frame) {
+  // Iterate through all found robots and draw them
+  for (int i = 0; i < robots_to_draw.size(); i++) {
+    drawRobot(robots_to_draw.at(i), frame);
+  }
+}
+
 // This function reduces the noise of the image by eroding the image first
 // then dialating the remaining image to produce cleaner objects
 void morphOps(Mat &thresh) {
@@ -132,6 +140,7 @@ void morphOps(Mat &thresh) {
 void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
 
 	Ball ball;
+	vector<Robot> allRobots; //stores all robot locations
 
 	Mat temp;
 	threshold.copyTo(temp);
