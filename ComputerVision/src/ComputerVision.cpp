@@ -100,8 +100,8 @@ void drawRobot(Robot newRobot, Mat &frame) {
   putText(frame,"(" + intToString(x)+ "," + intToString(y) + ")",
           Point(x,y+20),1,1,Scalar(0,255,0));
   putText(frame, "Robot", Point(x+17,y+35),1,1,Scalar(0,255,0));
-  putText(frame, "Team " + team, Point(x+17,y+50),1,1,Scalar(0,255,0));
-  putText(frame, "angle: " + angle, Point(x+17,y+65),1,1,Scalar(0,255,0));
+  putText(frame, "Team " + intToString(team), Point(x+17,y+50),1,1,Scalar(0,255,0));
+  putText(frame, "Angle: " + intToString(angle), Point(x+17,y+65),1,1,Scalar(0,255,0));
 }
 
 // Draws all robot objects that are found
@@ -180,7 +180,7 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
                          centerPoints[c2].x - centerPoints[c1].x))*(180/PI);
 
     // Set Robot variables
-    robot.setAngle(angle);
+    robot.setAngle((int)angle);
     robot.set_x_pos((int)centerPoints[c1].x);
     robot.set_y_pos((int)centerPoints[c1].y);
     drawRobot(robot, cameraFeed);
