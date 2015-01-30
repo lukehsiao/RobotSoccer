@@ -29,11 +29,11 @@ Robot::~Robot() {
 }
 
 // Setters and Getters
-void Robot::setAngle(int newAngle) {
+void Robot::setAngle(float newAngle) {
   Robot::angle = newAngle;
 }
 
-int Robot::getAngle() {
+float Robot::getAngle() {
   return Robot::angle;
 }
 

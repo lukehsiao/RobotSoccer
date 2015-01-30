@@ -18,6 +18,8 @@
 #include "Robot.h"
 #include "Object.h"
 
+#define PI 3.14159265
+
 using namespace cv;
 
 //initial min and max HSV filter values.
@@ -116,9 +118,9 @@ void morphOps(Mat &thresh) {
 	//create structuring element that will be used to "dilate" and "erode" image.
 
 	//the element chosen here is a 3px by 3px rectangle
-	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(3,3));
+	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(4,4));
 	//dilate with larger element so make sure object is nicely visible
-	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(10,10));
+	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(11,11));
 
 	erode(thresh,thresh,erodeElement);
   dilate(thresh,thresh,dilateElement);
@@ -132,48 +134,56 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
   Mat temp;
   threshold.copyTo(temp);
 
+  int c1 = 0, c2=1;   // c1 = Center Point of Big Circle and c2 = Center Point of Small Circle
+
   //these two vectors needed for output of findContours
   vector< vector<Point> > contours;
   vector<Vec4i> hierarchy;
 
   //find contours of filtered image using openCV findContours function
-  findContours(temp,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
+  findContours(temp,contours,hierarchy,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE );
 
   //use moments method to find our filtered object
-  //double refArea = 0;
-  bool objectFound = false;
-  if (hierarchy.size() > 0) {
-    int numObjects = hierarchy.size();
-    //if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
-    if(numObjects<MAX_NUM_OBJECTS){
-      for (int index = 0; index >= 0; index = hierarchy[index][0]) {
+  if (contours.size() == 2) {
 
-        Moments moment = moments((Mat)contours[index]);
-        double area = moment.m00;
-
-        //if the area is less than 20 px by 20px then it is probably just noise
-        //if the area is the same as the 3/2 of the image size, probably just a bad filter
-        //we only want the object with the largest area so we safe a reference area each
-        //iteration and compare it to the area in the next iteration.
-        if(area>MIN_OBJECT_AREA){
-          robot.set_x_pos(moment.m10/area);
-          robot.set_y_pos(moment.m01/area);
-
-
-          objectFound = true;
-        }
-        else {
-          objectFound = false;
-        }
-      }
-      //let user know you found an object
-      if(objectFound ==true){
-        //draw object location on screen
-        drawRobot(robot,cameraFeed);}
+    // Identify the bigger object
+    if (contourArea(contours[0]) < contourArea(contours[1])) {
+      c1 = 1;
+      c2 = 0;
     }
     else {
-      putText(cameraFeed,"TOO MUCH NOISE! ADJUST FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
+      c1 = 0;
+      c2 = 1;
     }
+
+    // Get moments
+    vector<Moments> robotMoments(contours.size());
+    for (int i = 0; i < contours.size(); i++) {
+      robotMoments[i] = moments(contours[i], false);
+    }
+
+    // Find centers
+    vector<Point2f> centerPoints(contours.size());
+    for (int i = 0; i < contours.size(); i++) {
+      centerPoints[i] = Point2f(robotMoments[i].m10/robotMoments[i].m00,
+                                robotMoments[i].m01/robotMoments[i].m00);
+    }
+
+    // Mark the bigger circle
+    circle(cameraFeed, centerPoints[c1], 9, Scalar(255,0,0), -1, 8, 0);
+
+    //Draw line between centers
+    line(cameraFeed, centerPoints[c1], centerPoints[c2], Scalar(0,0,255), 4, 8, 0);
+
+    //Calculate the angle
+    float angle = (atan2(centerPoints[c2].y - centerPoints[c1].y,
+                         centerPoints[c2].x - centerPoints[c1].x))*(180/PI);
+
+    // Set Robot variables
+    robot.setAngle(angle);
+    robot.set_x_pos((int)centerPoints[c1].x);
+    robot.set_y_pos((int)centerPoints[c1].y);
+    drawRobot(robot, cameraFeed);
   }
 }
 
@@ -189,7 +199,7 @@ void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
 	vector<Vec4i> hierarchy;
 
 	//find contours of filtered image using openCV findContours function
-	findContours(temp,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
+	findContours(temp,contours,hierarchy,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE );
 
 	//use moments method to find our filtered object
 	//double refArea = 0;
@@ -243,7 +253,7 @@ void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
   findContours(temp,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
 
   //use moments method to find our filtered object
-  double refArea = 0;
+  //double refArea = 0;
   bool objectFound = false;
   if (hierarchy.size() > 0) {
     int numObjects = hierarchy.size();
@@ -279,43 +289,6 @@ void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
   }
 }
 
-// Below is sample C++ code to find a large circle, then the angle
-//if (contours.size() == 2)
-//{
-//  /*
-//  for( int i = 0; i < contours.size(); i++ )
-//   {
-//     Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-//     drawContours( imgOriginal, contours, i, color, 2, 8, hierarchy, 0, Point(0,0) );
-//   }
-//  */
-//  if (contourArea(contours[0]) < contourArea(contours[1])){c1 = 1; c2 = 0;}else {c1 = 0; c2 = 1;} //Identify the biggest circle
-//
-//  vector<Moments> mu(contours.size() );   /// Get the moments
-//  for( int i = 0; i < contours.size(); i++ )
-//    { mu[i] = moments( contours[i], false ); }
-//
-//  vector<Point2f> mc( contours.size() );    ///  Get the mass centers
-//  for( int i = 0; i < contours.size(); i++ )
-//    { mc[i] = Point2f( mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00 );
-//    //circle( imgOriginal, mc[i], 6, Scalar(255, 0, 0), -1, 8, 0 );
-//    }
-//
-//  circle( imgOriginal, mc[c1], 8, Scalar(255, 0, 0), -1, 8, 0 );  //Mark only on big circle
-//  line(imgOriginal, mc[c1], mc[c2], Scalar(0, 0, 255), 4, 8, 0);  //Connect Mass Center
-//  cout <<", "<< mc[c1] ;  // only center for big circle
-//
-//
-//  float angle = (atan2(mc[c2].y - mc[c1].y, mc[c2].x - mc[c1].x))*180/PI; //Determine the angle from horizontal line
-//  //cout << " ,& " <<mc[c2].y - mc[c1].y<<endl;
-//  if (mc[c2].y - mc[c1].y >=  0)
-//      {cout << " ,* " <<360 - angle<<endl;}
-//  else cout << " , " <<angle*(-1)<<endl;
-//}
-//else {
-//  cout << " No mark detected." <<endl;
-//}
-
 
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
@@ -349,14 +322,14 @@ int main(int argc, char* argv[]) {
 
 		if(calibrationMode==true) {
 		  //if in calibration mode, we track objects based on the HSV slider values.
-		  cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 		  inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
 
 		  // Erode, then dialate to get a cleaner image
 		  morphOps(threshold);
 
 		  imshow(windowName2,threshold);
-		  trackFilteredObject(threshold,HSV,cameraFeed);
+		  Robot home1(HOME);
+		  trackFilteredRobot(home1, threshold,HSV,cameraFeed);
 		}
 		else {
 		  // When NOT in calibration mode, use actual hard-coded color values
@@ -365,13 +338,12 @@ int main(int argc, char* argv[]) {
 		  Ball ball;
 
 
-		  cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
+
 		  inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
 		  // Erode, then dialate to get a cleaner image
 		  morphOps(threshold);
 		  trackFilteredBall(ball,threshold,HSV,cameraFeed);
 
-      cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
       inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
       // Erode, then dialate to get a cleaner image
       morphOps(threshold);

@@ -19,7 +19,7 @@ class Object {
     void set_x_pos(int x);
     int get_x_pos();
 
-    void set_y_pos(int x);
+    void set_y_pos(int y);
     int get_y_pos();
 
     cv::Scalar getHSVmin();
