@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <stdio.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv/cv.h>
 #include "Ball.h"
@@ -39,7 +40,7 @@ const int FRAME_HEIGHT = 480;
 const int MAX_NUM_OBJECTS=50;
 
 //minimum and maximum object area
-const int MIN_OBJECT_AREA = 40*40;
+const int MIN_OBJECT_AREA = 10*10;
 const int MAX_OBJECT_AREA = FRAME_HEIGHT*FRAME_WIDTH/1.5;
 
 //names that will appear at the top of each window
@@ -118,9 +119,9 @@ void morphOps(Mat &thresh) {
 	//create structuring element that will be used to "dilate" and "erode" image.
 
 	//the element chosen here is a 3px by 3px rectangle
-	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(4,4));
+	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(2,2));
 	//dilate with larger element so make sure object is nicely visible
-	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(11,11));
+	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(7,7));
 
 	erode(thresh,thresh,erodeElement);
   dilate(thresh,thresh,dilateElement);
@@ -314,20 +315,28 @@ int main(int argc, char* argv[]) {
 		createTrackbars();
 	}
 	//video capture object to acquire webcam feed
-	VideoCapture capture;
+	//VideoCapture capture;
 	//open capture object at location zero (default location for webcam)
-	capture.open("demo.mp4");
+	//capture.open("demo.mp4");
 
 	//set height and width of capture frame
-	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
-	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
+	//capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
+	//capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
 
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
+	int counter = 0;
 	while(1) {
 		//store image to matrix
-		capture.read(cameraFeed);
+		//capture.read(cameraFeed);
 		//convert frame from BGR to HSV colorspace
+
+    system("wget \"http://192.168.1.222/admin-bin/ccam.cgi?opt=vxyhc&ww=2048&wh=1536\" -O image.jpg");
+
+    // Use OpenCV to open "image.jpg" here and dump into mat
+    cameraFeed = imread("image.jpg", CV_LOAD_IMAGE_COLOR);
+    printf("Image %d", counter++);
+
 		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
 		if(calibrationMode==true) {
@@ -337,9 +346,10 @@ int main(int argc, char* argv[]) {
 		  // Erode, then dialate to get a cleaner image
 		  morphOps(threshold);
 
-		  imshow(windowName2,threshold); waitKey(0);
-		  Robot home1(HOME);
-		  trackFilteredRobot(home1, threshold,HSV,cameraFeed);
+		  imshow(windowName2,threshold);
+		  //Robot home1(HOME);
+		  Ball ball;
+		  trackFilteredBall(ball, threshold,HSV,cameraFeed);
 		}
 		else {
 		  // When NOT in calibration mode, use actual hard-coded color values
@@ -362,7 +372,7 @@ int main(int argc, char* argv[]) {
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
-		waitKey(100);
+		waitKey(30);
 	}
 	return 0;
 }
