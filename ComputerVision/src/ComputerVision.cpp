@@ -40,7 +40,7 @@ const int FRAME_HEIGHT = 480;
 const int MAX_NUM_OBJECTS=50;
 
 //minimum and maximum object area
-const int MIN_OBJECT_AREA = 10*10;
+const int MIN_OBJECT_AREA = 7*7;
 const int MAX_OBJECT_AREA = FRAME_HEIGHT*FRAME_WIDTH/1.5;
 
 //names that will appear at the top of each window
@@ -119,15 +119,15 @@ void morphOps(Mat &thresh) {
 	//create structuring element that will be used to "dilate" and "erode" image.
 
 	//the element chosen here is a 3px by 3px rectangle
-	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(1,1));
+	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(2,2));
 	//dilate with larger element so make sure object is nicely visible
-	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(6,6));
+	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(7,7));
 
 	erode(thresh,thresh,erodeElement);
   dilate(thresh,thresh,dilateElement);
-//
-//	erode(thresh,thresh,erodeElement);
-//	dilate(thresh,thresh,dilateElement);
+
+	erode(thresh,thresh,erodeElement);
+	dilate(thresh,thresh,dilateElement);
 }
 
 // Function specific for tracking robots. Will calculate the center of the robot as
@@ -303,7 +303,7 @@ void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
 
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
-	bool calibrationMode = true;
+	bool calibrationMode = false;
 
 	//Matrix to store each frame of the webcam feed
 	Mat cameraFeed;
@@ -325,7 +325,6 @@ int main(int argc, char* argv[]) {
 
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
-	int counter = 0;
 	while(1) {
 		//store image to matrix
 		//capture.read(cameraFeed);
@@ -354,8 +353,8 @@ int main(int argc, char* argv[]) {
 
 		  imshow(windowName2,threshold);
 		  Robot home1(HOME);
-		  Ball ball;
-		  trackFilteredBall(ball,threshold,HSV,cameraFeed);
+		  //Ball ball;
+		  trackFilteredRobot(home1,threshold,HSV,cameraFeed);
 		}
 		else {
 		  // When NOT in calibration mode, use actual hard-coded color values
@@ -378,7 +377,7 @@ int main(int argc, char* argv[]) {
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
-		waitKey(80);
+		waitKey(120);
 	}
 	return 0;
 }
