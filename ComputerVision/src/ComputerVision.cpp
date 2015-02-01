@@ -119,15 +119,15 @@ void morphOps(Mat &thresh) {
 	//create structuring element that will be used to "dilate" and "erode" image.
 
 	//the element chosen here is a 3px by 3px rectangle
-	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(2,2));
+	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(1,1));
 	//dilate with larger element so make sure object is nicely visible
-	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(7,7));
+	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(6,6));
 
 	erode(thresh,thresh,erodeElement);
   dilate(thresh,thresh,dilateElement);
-
-	erode(thresh,thresh,erodeElement);
-	dilate(thresh,thresh,dilateElement);
+//
+//	erode(thresh,thresh,erodeElement);
+//	dilate(thresh,thresh,dilateElement);
 }
 
 // Function specific for tracking robots. Will calculate the center of the robot as
@@ -303,8 +303,8 @@ void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
 
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
-	bool calibrationMode = false;
-	
+	bool calibrationMode = true;
+
 	//Matrix to store each frame of the webcam feed
 	Mat cameraFeed;
 	Mat threshold;
@@ -335,7 +335,13 @@ int main(int argc, char* argv[]) {
 
     // Use OpenCV to open "image.jpg" here and dump into mat
     cameraFeed = imread("image.jpg", CV_LOAD_IMAGE_COLOR);
-    printf("Image %d", counter++);
+
+    //Crop out stuff
+    if (cameraFeed.cols < 700 || cameraFeed.rows < 600) {
+      continue;
+    }
+    Rect myROI(60,140,920,470);
+    cameraFeed = cameraFeed(myROI);
 
 		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
@@ -347,9 +353,9 @@ int main(int argc, char* argv[]) {
 		  morphOps(threshold);
 
 		  imshow(windowName2,threshold);
-		  //Robot home1(HOME);
+		  Robot home1(HOME);
 		  Ball ball;
-		  trackFilteredBall(ball, threshold,HSV,cameraFeed);
+		  trackFilteredBall(ball,threshold,HSV,cameraFeed);
 		}
 		else {
 		  // When NOT in calibration mode, use actual hard-coded color values
@@ -372,7 +378,7 @@ int main(int argc, char* argv[]) {
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
-		waitKey(30);
+		waitKey(80);
 	}
 	return 0;
 }
