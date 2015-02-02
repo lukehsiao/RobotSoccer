@@ -12,6 +12,8 @@ using namespace cv;
 Object::Object() {
   Object::x_pos = 0;
   Object::y_pos = 0;
+  Object::img_x = 0;
+  Object::img_y = 0;
   Object::HSVmax = 0;
   Object::HSVmin = 0;
 }
@@ -27,6 +29,22 @@ void Object::set_x_pos(int x) {
 
 int Object::get_x_pos() {
   return Object::x_pos;
+}
+
+void Object::set_img_x(int x) {
+  Object::img_x = x;
+}
+
+int Object::get_img_x() {
+  return Object::img_x;
+}
+
+void Object::set_img_y(int y) {
+  Object::img_y = y;
+}
+
+int Object::get_img_y() {
+  return Object::img_y;
 }
 
 void Object::set_y_pos(int y) {

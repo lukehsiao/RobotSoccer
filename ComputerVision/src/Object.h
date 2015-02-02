@@ -22,6 +22,13 @@ class Object {
     void set_y_pos(int y);
     int get_y_pos();
 
+    void set_img_x(int x);
+    int get_img_x();
+
+    void set_img_y(int y);
+    int get_img_y();
+
+
     cv::Scalar getHSVmin();
     void setHSVmin(cv::Scalar min);
 
@@ -30,6 +37,7 @@ class Object {
 
   protected:
     int x_pos, y_pos;
+    int img_x, img_y;
     cv::Scalar HSVmin, HSVmax;
 };
 

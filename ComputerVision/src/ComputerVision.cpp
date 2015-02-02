@@ -21,6 +21,12 @@
 
 #define PI 3.14159265
 
+// Constants for determining field coordinate systems
+#define FIELD_WIDTH 790
+#define FIELD_HEIGHT 400
+#define FIELD_CENTER_X 455
+#define FIELD_CENTER_Y 240
+
 using namespace cv;
 
 //initial min and max HSV filter values.
@@ -75,6 +81,24 @@ void createTrackbars() {
 	createTrackbar( "V_MAX", trackbarWindowName, &V_MAX, V_MAX, on_trackbar );
 }
 
+//Converts from image coordinates to field coordinates
+Point convertCoordinates(Point imageCoordinates) {
+  int img_x = imageCoordinates.x;
+  int img_y = imageCoordinates.y;
+
+  int field_x;
+  int field_y;
+  Point result;
+
+  field_x = img_x - FIELD_CENTER_X;
+
+  field_y = FIELD_CENTER_Y - img_y;
+
+  result.x = field_x;
+  result.y = field_y;
+  return result;
+}
+
 // Places a small circle on the object
 void drawObject(int x,int y,Mat &frame) {
 	circle(frame,cv::Point(x,y),10,cv::Scalar(0,0,255));
@@ -83,22 +107,28 @@ void drawObject(int x,int y,Mat &frame) {
 }
 
 void drawBall(Ball soccerBall, Mat &frame) {
-  int x = soccerBall.get_x_pos();
-  int y = soccerBall.get_y_pos();
+  int x = soccerBall.get_img_x();
+  int y = soccerBall.get_img_y();
+
+  int real_x = soccerBall.get_x_pos();
+  int real_y = soccerBall.get_y_pos();
   circle(frame,cv::Point(x,y),10,cv::Scalar(0,0,255));
-  putText(frame,"(" + intToString(x)+ "," + intToString(y) + ")",
+  putText(frame,"(" + intToString(real_x)+ "," + intToString(real_y) + ")",
           Point(x,y+20),1,1,Scalar(0,255,0));
   putText(frame, "Ball", Point(x+25,y+35),1,1,Scalar(0,255,0));
 }
 
 void drawRobot(Robot newRobot, Mat &frame) {
-  int x = newRobot.get_x_pos();
-  int y = newRobot.get_y_pos();
+  int x = newRobot.get_img_x();
+  int y = newRobot.get_img_y();
   int team = newRobot.getTeam();
   int angle = newRobot.getAngle();
 
+  int real_x = newRobot.get_x_pos();
+  int real_y = newRobot.get_y_pos();
+
   circle(frame,cv::Point(x,y),10,cv::Scalar(0,0,255));
-  putText(frame,"(" + intToString(x)+ "," + intToString(y) + ")",
+  putText(frame,"(" + intToString(real_x)+ "," + intToString(real_y) + ")",
           Point(x,y+20),1,1,Scalar(0,255,0));
   putText(frame, "Robot", Point(x+17,y+35),1,1,Scalar(0,255,0));
   putText(frame, "Team " + intToString(team), Point(x+17,y+50),1,1,Scalar(0,255,0));
@@ -194,8 +224,12 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
     // TODO Filtering bad data (if the change in xpos or ypos is too large, ignore data
     // Set Robot variables
     robot.setAngle(intAngle);
-    robot.set_x_pos((int)centerPoints[c1].x);
-    robot.set_y_pos((int)centerPoints[c1].y);
+    Point fieldPosition = convertCoordinates(Point((int)centerPoints[c1].x,
+                                                   (int)centerPoints[c1].y));
+    robot.set_x_pos(fieldPosition.x);
+    robot.set_y_pos(fieldPosition.y);
+    robot.set_img_x((int)centerPoints[c1].x);
+    robot.set_img_y((int)centerPoints[c1].y);
     drawRobot(robot, cameraFeed);
   }
 }
@@ -230,9 +264,14 @@ void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
 				//if the area is the same as the 3/2 of the image size, probably just a bad filter
 				//we only want the object with the largest area so we safe a reference area each
 				//iteration and compare it to the area in the next iteration.
-				if(area>MIN_OBJECT_AREA){
-					ball.set_x_pos(moment.m10/area);
-					ball.set_y_pos(moment.m01/area);
+				if(area>MIN_OBJECT_AREA) {
+					ball.set_img_x(moment.m10/area);
+					ball.set_img_y(moment.m01/area);
+
+          Point fieldPosition = convertCoordinates(Point(moment.m10/area,
+                                                         moment.m01/area));
+          ball.set_x_pos(fieldPosition.x);
+          ball.set_y_pos(fieldPosition.y);
 					objectFound = true;
 				}
 				else {
