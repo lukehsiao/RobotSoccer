@@ -14,6 +14,8 @@ Object::Object() {
   Object::y_pos = 0;
   Object::img_x = 0;
   Object::img_y = 0;
+  Object::old_x_pos = 0;
+  Object::old_y_pos = 0;
   Object::HSVmax = 0;
   Object::HSVmin = 0;
 }
@@ -24,6 +26,7 @@ Object::~Object() {
 
 // Setters and Getters
 void Object::set_x_pos(int x) {
+  Object::old_x_pos = Object::x_pos; // save old position
   Object::x_pos = x;
 }
 
@@ -48,11 +51,20 @@ int Object::get_img_y() {
 }
 
 void Object::set_y_pos(int y) {
+  Object::old_y_pos = Object::y_pos; // save old position
   Object::y_pos = y;
 }
 
 int Object::get_y_pos() {
   return Object::y_pos;
+}
+
+int Object::get_old_y() {
+  return Object::old_y_pos;
+}
+
+int Object::get_old_x() {
+  return Object::old_x_pos;
 }
 
 cv::Scalar Object::getHSVmin() {

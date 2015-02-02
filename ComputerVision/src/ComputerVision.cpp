@@ -20,6 +20,8 @@
 #include "Object.h"
 
 #define PI 3.14159265
+#define MIN_CHANGE 5
+#define MAX_CHANGE 40
 
 // Constants for determining field coordinate systems
 #define FIELD_WIDTH 790
@@ -223,13 +225,22 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
 
     // TODO Filtering bad data (if the change in xpos or ypos is too large, ignore data
     // Set Robot variables
-    robot.setAngle(intAngle);
+
+    if (abs(intAngle - robot.getOldAngle()) > 2) {
+      robot.setAngle(intAngle);
+    }
+
     Point fieldPosition = convertCoordinates(Point((int)centerPoints[c1].x,
                                                    (int)centerPoints[c1].y));
-    robot.set_x_pos(fieldPosition.x);
-    robot.set_y_pos(fieldPosition.y);
-    robot.set_img_x((int)centerPoints[c1].x);
-    robot.set_img_y((int)centerPoints[c1].y);
+    if (abs(fieldPosition.x - robot.get_old_x()) > MIN_CHANGE) {
+      robot.set_x_pos(fieldPosition.x);
+      robot.set_img_x((int)centerPoints[c1].x);
+    }
+    if (abs(fieldPosition.y - robot.get_old_y()) > MIN_CHANGE) {
+      robot.set_y_pos(fieldPosition.y);
+      robot.set_img_y((int)centerPoints[c1].y);
+    }
+
     drawRobot(robot, cameraFeed);
   }
 }
@@ -265,13 +276,16 @@ void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
 				//we only want the object with the largest area so we safe a reference area each
 				//iteration and compare it to the area in the next iteration.
 				if(area>MIN_OBJECT_AREA) {
-					ball.set_img_x(moment.m10/area);
-					ball.set_img_y(moment.m01/area);
-
           Point fieldPosition = convertCoordinates(Point(moment.m10/area,
                                                          moment.m01/area));
-          ball.set_x_pos(fieldPosition.x);
-          ball.set_y_pos(fieldPosition.y);
+          if(abs(fieldPosition.x - ball.get_old_x()) > MIN_CHANGE) {
+            ball.set_x_pos(fieldPosition.x);
+            ball.set_img_x(moment.m10/area);
+          }
+          if(abs(fieldPosition.y - ball.get_old_y()) > MIN_CHANGE) {
+            ball.set_y_pos(fieldPosition.y);
+            ball.set_img_y(moment.m01/area);
+          }
 					objectFound = true;
 				}
 				else {
@@ -362,6 +376,11 @@ int main(int argc, char* argv[]) {
 	//capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
 	//capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
 
+  // When NOT in calibration mode, use actual hard-coded color values
+  Robot home1(HOME), home2(HOME);
+  Robot away1(AWAY), away2(AWAY);
+  Ball ball;
+
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
 	while(1) {
@@ -391,16 +410,9 @@ int main(int argc, char* argv[]) {
 		  morphOps(threshold);
 
 		  imshow(windowName2,threshold);
-		  Robot home1(HOME);
-		  //Ball ball;
-		  trackFilteredRobot(home1,threshold,HSV,cameraFeed);
+		  trackFilteredBall(ball,threshold,HSV,cameraFeed);
 		}
 		else {
-		  // When NOT in calibration mode, use actual hard-coded color values
-		  Robot home1(HOME), home2(HOME);
-		  Robot away1(AWAY), away2(AWAY);
-		  Ball ball;
-
 		  inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
 		  // Erode, then dialate to get a cleaner image
 		  morphOps(threshold);
@@ -410,6 +422,11 @@ int main(int argc, char* argv[]) {
       // Erode, then dialate to get a cleaner image
       morphOps(threshold);
       trackFilteredRobot(home1,threshold,HSV,cameraFeed);
+
+//      inRange(HSV,away1.getHSVmin(),away1.getHSVmax(),threshold);
+//      // Erode, then dialate to get a cleaner image
+//      morphOps(threshold);
+//      trackFilteredRobot(away1,threshold,HSV,cameraFeed);
 
 		}
 

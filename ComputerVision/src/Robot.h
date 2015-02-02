@@ -23,11 +23,14 @@ class Robot: public Object {
     void setTeam(int team);
     int getTeam();
 
+    int getOldAngle();
+
     int getAngle();
     void setAngle(int newAngle);
 
   private:
     int angle;
+    int old_angle;
     int team;
 };
 

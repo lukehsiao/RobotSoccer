@@ -28,6 +28,8 @@ class Object {
     void set_img_y(int y);
     int get_img_y();
 
+    int get_old_x();
+    int get_old_y();
 
     cv::Scalar getHSVmin();
     void setHSVmin(cv::Scalar min);
@@ -38,6 +40,10 @@ class Object {
   protected:
     int x_pos, y_pos;
     int img_x, img_y;
+
+    // Used to smooth data
+    int old_x_pos, old_y_pos;
+
     cv::Scalar HSVmin, HSVmax;
 };
 

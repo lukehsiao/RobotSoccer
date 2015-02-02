@@ -13,14 +13,15 @@ using namespace cv;
 Robot::Robot(int TEAM) : Object() {
   Robot::team = TEAM;
   Robot::angle = 0;
+  Robot::old_angle = 0;
   // Hard code team colors here
   if (team == HOME) {
-    setHSVmin(cv::Scalar(0,0,212));
+    setHSVmin(cv::Scalar(0,0,200));
     setHSVmax(cv::Scalar(5,255,255));
   }
   else if (team == AWAY) {
-    setHSVmin(cv::Scalar(0,0,0));
-    setHSVmax(cv::Scalar(255,255,255));
+    setHSVmin(cv::Scalar(103,67,0));
+    setHSVmax(cv::Scalar(138,217,255));
   }
 }
 
@@ -30,11 +31,16 @@ Robot::~Robot() {
 
 // Setters and Getters
 void Robot::setAngle(int newAngle) {
+  Robot::old_angle = Robot::angle;
   Robot::angle = newAngle;
 }
 
 int Robot::getAngle() {
   return Robot::angle;
+}
+
+int Robot::getOldAngle() {
+  return Robot::old_angle;
 }
 
 // Set which team the robot is on. 1 = HOME, 2 = AWAY
