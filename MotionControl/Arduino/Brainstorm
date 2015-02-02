@@ -1,0 +1,11 @@
+camara --> computer.ROS.publish --> Odroide.ROS.subscriber(in Python)
+
+spin no drift,
+move in a box of size * facing the same direction
+put the robot anywhere on the field, end up facing the goal in the center
+
+todo: 
+1. set up python be able to load it onto the robot
+2. matrix lib 
+3. implement the math from class
+
