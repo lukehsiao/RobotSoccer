@@ -373,11 +373,16 @@ int main(int argc, char* argv[]) {
       trackFilteredRobot(home1,threshold,HSV,cameraFeed);
 
 		}
+
+    // Show Field Outline
+    printf("Draw rectangle");
+    Rect fieldOutline(60, 40, 790, 400);
+    rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
 		imshow(windowName,cameraFeed);
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
-		waitKey(120);
+		waitKey(10);
 	}
 	return 0;
 }
