@@ -12,8 +12,8 @@ using namespace cv;
 Object::Object() {
   Object::x_pos = 0;
   Object::y_pos = 0;
-  Object::img_x = 0;
-  Object::img_y = 0;
+  Object::img_x = 455;
+  Object::img_y = 240;
   Object::old_x_pos = 0;
   Object::old_y_pos = 0;
   Object::HSVmax = 0;

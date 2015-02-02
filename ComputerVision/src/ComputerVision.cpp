@@ -21,7 +21,7 @@
 
 #define PI 3.14159265
 #define MIN_CHANGE 5
-#define MAX_CHANGE 40
+#define MAX_CHANGE 150
 
 // Constants for determining field coordinate systems
 #define FIELD_WIDTH 790
@@ -232,11 +232,13 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
 
     Point fieldPosition = convertCoordinates(Point((int)centerPoints[c1].x,
                                                    (int)centerPoints[c1].y));
-    if (abs(fieldPosition.x - robot.get_old_x()) > MIN_CHANGE) {
+    if (abs(fieldPosition.x - robot.get_old_x()) > MIN_CHANGE &&
+        abs(fieldPosition.x - robot.get_old_x()) < MAX_CHANGE) {
       robot.set_x_pos(fieldPosition.x);
       robot.set_img_x((int)centerPoints[c1].x);
     }
-    if (abs(fieldPosition.y - robot.get_old_y()) > MIN_CHANGE) {
+    if (abs(fieldPosition.y - robot.get_old_y()) > MIN_CHANGE &&
+        abs(fieldPosition.y - robot.get_old_y()) < MAX_CHANGE) {
       robot.set_y_pos(fieldPosition.y);
       robot.set_img_y((int)centerPoints[c1].y);
     }
@@ -278,11 +280,13 @@ void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
 				if(area>MIN_OBJECT_AREA) {
           Point fieldPosition = convertCoordinates(Point(moment.m10/area,
                                                          moment.m01/area));
-          if(abs(fieldPosition.x - ball.get_old_x()) > MIN_CHANGE) {
+          if(abs(fieldPosition.x - ball.get_old_x()) > MIN_CHANGE &&
+             abs(fieldPosition.x - ball.get_old_x()) < MAX_CHANGE) {
             ball.set_x_pos(fieldPosition.x);
             ball.set_img_x(moment.m10/area);
           }
-          if(abs(fieldPosition.y - ball.get_old_y()) > MIN_CHANGE) {
+          if(abs(fieldPosition.y - ball.get_old_y()) > MIN_CHANGE &&
+             abs(fieldPosition.y - ball.get_old_y()) < MAX_CHANGE) {
             ball.set_y_pos(fieldPosition.y);
             ball.set_img_y(moment.m01/area);
           }
@@ -388,7 +392,7 @@ int main(int argc, char* argv[]) {
 		//capture.read(cameraFeed);
 		//convert frame from BGR to HSV colorspace
 
-    system("wget \"http://192.168.1.222/admin-bin/ccam.cgi?opt=vxyhc&ww=2048&wh=1536\" -O image.jpg");
+    system("wget -q \"http://192.168.1.222/admin-bin/ccam.cgi?opt=vxyhc&ww=2048&wh=1536\" -O image.jpg");
 
     // Use OpenCV to open "image.jpg" here and dump into mat
     cameraFeed = imread("image.jpg", CV_LOAD_IMAGE_COLOR);
