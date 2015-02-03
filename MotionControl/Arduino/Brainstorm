@@ -16,3 +16,6 @@ todo:
 spin no drift: forward on all wheels
 anywhere: currentposition(x1,y1) center position(0,0), 
 move in a box: left backward right forward left 
+
+
+angular velocity-->
