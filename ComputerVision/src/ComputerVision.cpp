@@ -19,9 +19,14 @@
 #include "Robot.h"
 #include "Object.h"
 
+#include "ros/ros.h"
+#include "std_msgs/String.h"
+#include "robot_soccer/locations.h"
+
+
 #define PI 3.14159265
 #define MIN_CHANGE 5
-#define MAX_CHANGE 150
+#define MAX_CHANGE 1000
 
 // Constants for determining field coordinate systems
 #define FIELD_WIDTH 790
@@ -226,7 +231,7 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
     // TODO Filtering bad data (if the change in xpos or ypos is too large, ignore data
     // Set Robot variables
 
-    if (abs(intAngle - robot.getOldAngle()) > 2) {
+    if (abs(intAngle - robot.getOldAngle()) > 5) {
       robot.setAngle(intAngle);
     }
 
@@ -385,9 +390,18 @@ int main(int argc, char* argv[]) {
   Robot away1(AWAY), away2(AWAY);
   Ball ball;
 
+  /***********************Ros Publisher************************************/
+
+  ros::init(argc, argv, "computer_vision");
+  ros::NodeHandle n;
+  ros::Publisher publisher = n.advertise<robot_soccer::locations>("locTopic", 1000);
+  ros::Rate loop_rate(10);
+
+  /************************************************************************/
+
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
-	while(1) {
+	while(ros::ok()) {
 		//store image to matrix
 		//capture.read(cameraFeed);
 		//convert frame from BGR to HSV colorspace
@@ -435,14 +449,31 @@ int main(int argc, char* argv[]) {
 		}
 
     // Show Field Outline
-    printf("Draw rectangle");
     Rect fieldOutline(60, 40, 790, 400);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
 		imshow(windowName,cameraFeed);
 
+		/***********************Ros Publisher************************************/
+
+		// Create message object
+		robot_soccer::locations coordinates;
+		// Fill message object with values
+		coordinates.home1_x = home1.get_x_pos();
+		coordinates.home1_y = home1.get_y_pos();
+		coordinates.home1_theta = home1.getAngle();
+		// Print values to ROS console
+		ROS_INFO("x %d\ny %d\ntheta %d\n", coordinates.home1_x, coordinates.home1_y, coordinates.home1_theta);
+		// Publish message
+		publisher.publish(coordinates);
+		// Waits the necessary time between message publications to meet the
+		// specified frequency set above (ros::Rate loop_rate(10);)
+		loop_rate.sleep();
+
+		/************************************************************************/
+
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
-		waitKey(10);
+		waitKey(50);
 	}
 	return 0;
 }
