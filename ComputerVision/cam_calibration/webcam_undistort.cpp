@@ -18,11 +18,26 @@
 using namespace std;
 using namespace cv;
 
+
+volatile int quit_signal=0;
+#ifdef __unix__
+#include <signal.h>
+extern "C" void quit_signal_handler(int signum) {
+ if (quit_signal!=0) exit(0); // just exit already
+ quit_signal=1;
+ printf("Will quit at next camera frame (repeat to kill now)\n");
+}
+#endif
+
 int main()
 {
 	int numBoards = 0;
 	int numCornersHor;
 	int numCornersVer;
+
+  #ifdef __unix__
+     signal(SIGINT,quit_signal_handler); // listen for ctrl-C
+  #endif
 
 	printf("Enter number of corners along width: ");
 	scanf("%d", &numCornersHor);
@@ -54,6 +69,7 @@ int main()
 			      (j / numCornersHor, j % numCornersHor, 0.0f));
 
 	while (successes < numBoards) {
+
 		cvtColor(image, gray_image, CV_BGR2GRAY);
 		bool found = findChessboardCorners(image, board_sz, corners,
 						   CALIB_CB_ADAPTIVE_THRESH |
@@ -72,7 +88,9 @@ int main()
 		imshow("win2", gray_image);
 
 		capture >> image;
-		int key = waitKey(1);
+    if (quit_signal) exit(0); // exit cleanly on interrupt
+		
+		int key = waitKey(20);
 
 		if (key == 27)
 			return 0;
@@ -105,6 +123,7 @@ int main()
 	Mat imageUndistorted;
 	while (1) {
 		capture >> image;
+    if (quit_signal) exit(0); // exit cleanly on interrupt 
 		undistort(image, imageUndistorted, intrinsic, distCoeffs);
 
 		imshow("win1", image);
