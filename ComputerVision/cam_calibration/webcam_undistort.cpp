@@ -89,6 +89,8 @@ int main()
 				break;
 		}
 	}
+	
+	// TODO: Output these into XML using OpenCV
 	Mat intrinsic = Mat(3, 3, CV_32FC1);
 	Mat distCoeffs;
 	vector < Mat > rvecs;
