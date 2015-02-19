@@ -19,9 +19,6 @@
 #include "Robot.h"
 #include "Object.h"
 
-#include "ros/ros.h"
-#include "std_msgs/String.h"
-#include "robot_soccer/locations.h"
 
 
 #define PI 3.14159265
@@ -29,12 +26,18 @@
 #define MAX_CHANGE 1000
 
 // Constants for determining field coordinate systems
-#define FIELD_WIDTH 790
-#define FIELD_HEIGHT 400
-#define FIELD_CENTER_X 455
-#define FIELD_CENTER_Y 240
+//#define FIELD_WIDTH 640// 790
+//#define FIELD_HEIGHT 400
+//#define FIELD_CENTER_X 320//455
+//#define FIELD_CENTER_Y 200//240
 
 using namespace cv;
+
+// Field variables
+unsigned field_width;
+unsigned field_height;
+unsigned field_center_x;
+unsigned field_center_y;
 
 //initial min and max HSV filter values.
 //these will be changed using trackbars
@@ -46,8 +49,8 @@ int V_MIN = 0;
 int V_MAX = 256;
 
 //default capture width and height
-const int FRAME_WIDTH = 640;
-const int FRAME_HEIGHT = 480;
+const int FRAME_WIDTH = 1024;
+const int FRAME_HEIGHT = 768;
 
 //max number of objects to be detected in frame
 const int MAX_NUM_OBJECTS=50;
@@ -363,9 +366,31 @@ void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
   }
 }
 
+// Generate prompts to calibrate colors for the Home1 robots
+void calibrateRobot_Home1() {
+
+}
+
+// Generates prompts for calibration of the color ball
+void calibrateBall() {
+
+}
+
+// Generates prompts for field calibration of size/center
+void calibrateField() {
+
+}
+
+// Generates all the calibration prompts (field + ball + robots)
+void runFullCalibration() {
+  calibrateField();
+  calibrateBall();
+  calibrateRobot_Home1();
+}
+
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
-	bool calibrationMode = false;
+	bool calibrationMode = true;
 
 	//Matrix to store each frame of the webcam feed
 	Mat cameraFeed;
@@ -377,46 +402,39 @@ int main(int argc, char* argv[]) {
 		createTrackbars();
 	}
 	//video capture object to acquire webcam feed
-	//VideoCapture capture;
-	//open capture object at location zero (default location for webcam)
-	//capture.open("demo.mp4");
+	const string videoStreamAddress = "http://192.168.1.126:8080/?action=stream?dummy=param.mjpg";
+	VideoCapture capture;
+
+	capture.open(videoStreamAddress);
 
 	//set height and width of capture frame
-	//capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
-	//capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
+	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
+	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
 
   // When NOT in calibration mode, use actual hard-coded color values
   Robot home1(HOME), home2(HOME);
   Robot away1(AWAY), away2(AWAY);
   Ball ball;
 
-  /***********************Ros Publisher************************************/
-
-  ros::init(argc, argv, "computer_vision");
-  ros::NodeHandle n;
-  ros::Publisher publisher = n.advertise<robot_soccer::locations>("locTopic", 1000);
-  ros::Rate loop_rate(10);
-
   /************************************************************************/
-
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
-	while(ros::ok()) {
+	while(1) {
 		//store image to matrix
-		//capture.read(cameraFeed);
+		capture.read(cameraFeed);
 		//convert frame from BGR to HSV colorspace
 
-    system("wget -q \"http://192.168.1.222/admin-bin/ccam.cgi?opt=vxyhc&ww=2048&wh=1536\" -O image.jpg");
-
-    // Use OpenCV to open "image.jpg" here and dump into mat
-    cameraFeed = imread("image.jpg", CV_LOAD_IMAGE_COLOR);
-
-    //Crop out stuff
-    if (cameraFeed.cols < 700 || cameraFeed.rows < 600) {
-      continue;
-    }
-    Rect myROI(60,140,920,470);
-    cameraFeed = cameraFeed(myROI);
+//    system("wget -q \"http://192.168.1.222/admin-bin/ccam.cgi?opt=vxyhc&ww=2048&wh=1536\" -O image.jpg");
+//
+//    // Use OpenCV to open "image.jpg" here and dump into mat
+//    //cameraFeed = imread("image.jpg", CV_LOAD_IMAGE_COLOR);
+//
+//    //Crop out stuff
+//    if (cameraFeed.cols < 700 || cameraFeed.rows < 600) {
+//      continue;
+//    }
+//    Rect myROI(60,140,920,470);
+//    cameraFeed = cameraFeed(myROI);
 
 		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
@@ -428,7 +446,7 @@ int main(int argc, char* argv[]) {
 		  morphOps(threshold);
 
 		  imshow(windowName2,threshold);
-		  trackFilteredBall(ball,threshold,HSV,cameraFeed);
+		  trackFilteredRobot(home1,threshold,HSV,cameraFeed);
 		}
 		else {
 		  inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
@@ -439,7 +457,7 @@ int main(int argc, char* argv[]) {
       inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
       // Erode, then dialate to get a cleaner image
       morphOps(threshold);
-      trackFilteredRobot(home1,threshold,HSV,cameraFeed);
+      trackFilteredBall(ball,threshold,HSV,cameraFeed);
 
 //      inRange(HSV,away1.getHSVmin(),away1.getHSVmax(),threshold);
 //      // Erode, then dialate to get a cleaner image
@@ -449,27 +467,9 @@ int main(int argc, char* argv[]) {
 		}
 
     // Show Field Outline
-    Rect fieldOutline(60, 40, 790, 400);
+    Rect fieldOutline(field_center_x, field_center_y, field_width, field_height);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
 		imshow(windowName,cameraFeed);
-
-		/***********************Ros Publisher************************************/
-
-		// Create message object
-		robot_soccer::locations coordinates;
-		// Fill message object with values
-		coordinates.home1_x = home1.get_x_pos();
-		coordinates.home1_y = home1.get_y_pos();
-		coordinates.home1_theta = home1.getAngle();
-		// Print values to ROS console
-		ROS_INFO("x %d\ny %d\ntheta %d\n", coordinates.home1_x, coordinates.home1_y, coordinates.home1_theta);
-		// Publish message
-		publisher.publish(coordinates);
-		// Waits the necessary time between message publications to meet the
-		// specified frequency set above (ros::Rate loop_rate(10);)
-		loop_rate.sleep();
-
-		/************************************************************************/
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
