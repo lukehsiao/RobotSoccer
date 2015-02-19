@@ -76,8 +76,9 @@ const string trackbarWindowName = "Trackbars";
 
 // This function is called whenever a trackbar changes
 void on_trackbar( int, void* ) {
-
+  // Does nothing
 }
+
 string intToString(int number) {
   std::stringstream ss;
   ss << number;
@@ -147,7 +148,7 @@ void drawRobot(Robot newRobot, Mat &frame) {
   int real_x = newRobot.get_x_pos();
   int real_y = newRobot.get_y_pos();
 
-  circle(frame,cv::Point(x,y),10,cv::Scalar(0,0,255));
+  circle(frame,cv::Point(x,y),10, Scalar(0,0,255));
   putText(frame,"(" + intToString(real_x)+ "," + intToString(real_y) + ")",
           Point(x,y+20),1,1,Scalar(0,255,0));
   putText(frame, "Robot", Point(x+17,y+35),1,1,Scalar(0,255,0));
@@ -196,7 +197,7 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
   findContours(temp,contours,hierarchy,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE );
 
   //use moments method to find our filtered object
-  //TODO(lukehsiao) This WILL break if there are mor0000000000000000000000000000e than 2 objects found. Segmentation has to be really good.
+  //TODO(lukehsiao) This WILL break if there are more than 2 objects found. Segmentation has to be really good.
   if (contours.size() == 2) {
 
     // Identify the bigger object
@@ -394,7 +395,7 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
 
   // Set Trackbar intial values to near Yellow
   setTrackbarPos( "H_MIN", trackbarWindowName, 0);
-  setTrackbarPos( "H_MAX", trackbarWindowName, 5);
+  setTrackbarPos( "H_MAX", trackbarWindowName, 35);
   setTrackbarPos( "S_MIN", trackbarWindowName, 0);
   setTrackbarPos( "S_MAX", trackbarWindowName, 255);
   setTrackbarPos( "V_MIN", trackbarWindowName, 225);
@@ -411,8 +412,6 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
       // Erode, then dialate to get a cleaner image
       morphOps(threshold);
 
-      imshow(windowName2,threshold);
-
       h_min = getTrackbarPos( "H_MIN", trackbarWindowName);
       h_max = getTrackbarPos( "H_MAX", trackbarWindowName);
       s_min = getTrackbarPos( "S_MIN", trackbarWindowName);
@@ -426,8 +425,10 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
       Home1.setHSVmin(hsv_min);
       Home1.setHSVmax(hsv_max);
 
-      imshow(windowName,cameraFeed);
       trackFilteredRobot(Home1,threshold,HSV,cameraFeed);
+
+      imshow(windowName2,threshold);
+      imshow(windowName,cameraFeed);
 
       char pressedKey;
       pressedKey = cvWaitKey(50); // Wait for user to press 'Enter'
@@ -448,6 +449,15 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
           printf("v_max: %d\n", v_max);
 
           destroyAllWindows();
+
+          // Reset Globals
+          H_MIN = 0;
+          H_MAX = 256;
+          S_MIN = 0;
+          S_MAX = 256;
+          V_MIN = 0;
+          V_MAX = 256;
+
           return;
       }
    }
@@ -489,7 +499,7 @@ setTrackbarPos( "V_MAX", trackbarWindowName, 255);
     // Erode, then dialate to get a cleaner image
     morphOps(threshold);
 
-    imshow(windowName2,threshold);
+
 
     h_min = getTrackbarPos( "H_MIN", trackbarWindowName);
     h_max = getTrackbarPos( "H_MAX", trackbarWindowName);
@@ -504,8 +514,10 @@ setTrackbarPos( "V_MAX", trackbarWindowName, 255);
     ball.setHSVmin(hsv_min);
     ball.setHSVmax(hsv_max);
 
-    imshow(windowName,cameraFeed);
     trackFilteredBall(ball,threshold,HSV,cameraFeed);
+
+    imshow(windowName,cameraFeed);
+    imshow(windowName2,threshold);
 
     char pressedKey;
     pressedKey = cvWaitKey(50); // Wait for user to press 'Enter'
@@ -525,6 +537,15 @@ setTrackbarPos( "V_MAX", trackbarWindowName, 255);
        printf("v_max: %d\n", v_max);
 
        destroyAllWindows();
+
+       // Reset Globals
+       H_MIN = 0;
+       H_MAX = 256;
+       S_MIN = 0;
+       S_MAX = 256;
+       V_MIN = 0;
+       V_MAX = 256;
+
        return;
      }
    }
@@ -568,6 +589,7 @@ void calibrateField(VideoCapture capture) {
     Rect fieldOutline(field_origin_x, field_origin_y, field_width, field_height);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
     imshow(windowName,cameraFeed);
+
     char pressedKey;
     pressedKey = cvWaitKey(50); // Wait for user to press 'Enter'
     if (pressedKey == '\n') {
