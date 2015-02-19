@@ -32,10 +32,10 @@
 using namespace cv;
 
 // Field variables
-unsigned field_width;
-unsigned field_height;
-unsigned field_center_x;
-unsigned field_center_y;
+int field_width;
+int field_height;
+int field_center_x;
+int field_center_y;
 
 //initial min and max HSV filter values.
 //these will be changed using trackbars
@@ -45,6 +45,16 @@ int S_MIN = 0;
 int S_MAX = 256;
 int V_MIN = 0;
 int V_MAX = 256;
+
+//min and max field variable values
+int field_height_min = 0;
+int field_width_min = 0;
+int field_center_x_min = 0;
+int field_center_y_min = 0;
+int field_height_max = 600;
+int field_width_max = 900;
+int field_center_x_max = 500;
+int field_center_y_max = 500;
 
 //default capture width and height
 const int FRAME_WIDTH = 1024;
@@ -73,6 +83,7 @@ string intToString(int number) {
   ss << number;
   return ss.str();
 }
+
 
 void createHSVTrackbars() {
 	//create window for trackbars
@@ -371,34 +382,165 @@ void calibrateRobot_Home1() {
 }
 
 // Generates prompts for calibration of the color ball
-void calibrateBall() {
+void calibrateBall(VideoCapture capture, Ball &ball) {
+Mat cameraFeed;
+Mat HSV;
+Mat threshold;
+int h_min;
+int h_max;
+int s_min;
+int s_max;
+int v_min;
+int v_max;
 
+//create trackbars
+createHSVTrackbars();
+
+// Set Trackbar intial values to near Yellow
+setTrackbarPos( "H_MIN", trackbarWindowName, 20);
+setTrackbarPos( "H_MAX", trackbarWindowName, 45);
+setTrackbarPos( "S_MIN", trackbarWindowName, 120);
+setTrackbarPos( "S_MAX", trackbarWindowName, 255);
+setTrackbarPos( "V_MIN", trackbarWindowName, 150);
+setTrackbarPos( "V_MAX", trackbarWindowName, 255);
+
+// Wait forever until user sets the values
+ while (1) {
+    capture.read(cameraFeed);
+    cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
+
+    //if in calibration mode, we track objects based on the HSV slider values.
+    inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
+
+    // Erode, then dialate to get a cleaner image
+    morphOps(threshold);
+
+    imshow(windowName2,threshold);
+
+    h_min = getTrackbarPos( "H_MIN", trackbarWindowName);
+    h_max = getTrackbarPos( "H_MAX", trackbarWindowName);
+    s_min = getTrackbarPos( "S_MIN", trackbarWindowName);
+    s_max = getTrackbarPos( "S_MAX", trackbarWindowName);
+    v_min = getTrackbarPos( "V_MIN", trackbarWindowName);
+    v_max = getTrackbarPos( "V_MAX", trackbarWindowName);
+
+    Scalar hsv_min(h_min, s_min, v_min);
+    Scalar hsv_max(h_max, s_max, v_max);
+
+    ball.setHSVmin(hsv_min);
+    ball.setHSVmax(hsv_max);
+
+    imshow(windowName,cameraFeed);
+    trackFilteredBall(ball,threshold,HSV,cameraFeed);
+
+    char pressedKey;
+    pressedKey = cvWaitKey(50); // Wait for user to press 'Enter'
+    if (pressedKey == '\n') {
+       h_min = getTrackbarPos( "H_MIN", trackbarWindowName);
+       h_max = getTrackbarPos( "H_MAX", trackbarWindowName);
+       s_min = getTrackbarPos( "S_MIN", trackbarWindowName);
+       s_max = getTrackbarPos( "S_MAX", trackbarWindowName);
+       v_min = getTrackbarPos( "V_MIN", trackbarWindowName);
+       v_max = getTrackbarPos( "V_MAX", trackbarWindowName);
+
+       Scalar hsv_min(h_min, s_min, v_min);
+       Scalar hsv_max(h_max, s_max, v_max);
+
+       ball.setHSVmin(hsv_min);
+       ball.setHSVmax(hsv_max);
+
+       printf("\n\nBall HSV Values Saved!\n");
+       printf("h_min: %d\n", h_min);
+       printf("h_max: %d\n", h_max);
+       printf("s_min: %d\n", s_min);
+       printf("s_max: %d\n", s_max);
+       printf("v_min: %d\n", v_min);
+       printf("v_max: %d\n", v_max);
+
+       destroyAllWindows();
+       return;
+     }
+   }
 }
 
 // Generates prompts for field calibration of size/center
-void calibrateField(Mat &cameraFeed) {
-  // Show Field Outline
-  // Set Initial Field Values
-  field_center_x = 60;
-  field_center_y = 40;
-  field_width = 720;
-  field_height = 400;
+void calibrateField(VideoCapture capture) {
+  Mat cameraFeed;
+  int field_origin_x;
+  int field_origin_y;
+  //create window for trackbars
+  namedWindow(trackbarWindowName,0);
 
-  Rect fieldOutline(field_center_x, field_center_y, field_width, field_height);
-  rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
-  imshow(windowName,cameraFeed);
+  //create trackbars and insert them into window
+  //3 parameters are: the address of the variable that is changing when the trackbar is moved(eg.H_LOW),
+  //the max value the trackbar can move (eg. H_HIGH),
+  //and the function that is called whenever the trackbar is moved(eg. on_trackbar)
+  createTrackbar( "Field Center Y", trackbarWindowName, &field_center_y_min, field_center_y_max, on_trackbar );
+  createTrackbar( "Field Center X", trackbarWindowName, &field_center_x_min, field_center_x_max, on_trackbar );
+  createTrackbar( "Field Height", trackbarWindowName, &field_height_min, field_height_max, on_trackbar );
+  createTrackbar( "Field Width", trackbarWindowName, &field_width_min, field_width_max, on_trackbar );
+
+  // Set Trackbar Initial Positions
+  setTrackbarPos( "Field Center Y", trackbarWindowName, field_center_y);
+  setTrackbarPos( "Field Center X", trackbarWindowName, field_center_x);
+  setTrackbarPos( "Field Height", trackbarWindowName, field_height);
+  setTrackbarPos( "Field Width", trackbarWindowName, field_width);
+
+  // Wait forever until user sets the values
+  while (1) {
+    capture.read(cameraFeed);
+    // Wait for user to set values
+    field_center_y = getTrackbarPos( "Field Center Y", trackbarWindowName);
+    field_center_x = getTrackbarPos( "Field Center X", trackbarWindowName);
+    field_height = getTrackbarPos( "Field Height", trackbarWindowName);
+    field_width = getTrackbarPos( "Field Width", trackbarWindowName);
+
+    Mat tempFrame = cameraFeed;
+
+    field_origin_x = field_center_x - (field_width/2);
+    field_origin_y = field_center_y - (field_height/2);
+
+    Rect fieldOutline(field_origin_x, field_origin_y, field_width, field_height);
+    rectangle(tempFrame,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
+    imshow(windowName,tempFrame);
+    char pressedKey;
+    pressedKey = cvWaitKey(50); // Wait for user to press 'Enter'
+    if (pressedKey == '\n') {
+      field_center_y = getTrackbarPos( "Field Center Y", trackbarWindowName);
+      field_center_x = getTrackbarPos( "Field Center X", trackbarWindowName);
+      field_height = getTrackbarPos( "Field Height", trackbarWindowName);
+      field_width = getTrackbarPos( "Field Width", trackbarWindowName);
+
+      printf("\n\nField Values Saved!\n");
+      printf("Field Center Y: %d\n", field_center_y);
+      printf("Field Center X: %d\n", field_center_x);
+      printf("Field Width: %d\n", field_width);
+      printf("Field Height: %d\n", field_height);
+      destroyAllWindows();
+      return;
+    }
+  }
 }
 
 // Generates all the calibration prompts (field + ball + robots)
-void runFullCalibration(Mat &cameraFeed) {
-  calibrateField(cameraFeed);
-  calibrateBall();
-  calibrateRobot_Home1();
+void runFullCalibration(VideoCapture capture, Ball &ball) {
+  calibrateField(capture);
+  calibrateBall(capture, ball);
+  //calibrateRobot_Home1();
 }
 
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
-	bool calibrationMode = true;
+	bool calibrationMode = false;
+
+  // Set Initial Field Values
+  field_center_x = 400;
+  field_center_y = 400;
+  field_width = 720;
+  field_height = 400;
+
+  int field_origin_x;
+  int field_origin_y;
 
 	//Matrix to store each frame of the webcam feed
 	Mat cameraFeed;
@@ -425,8 +567,7 @@ int main(int argc, char* argv[]) {
   Ball ball;
 
   // Calibrate the camera first
-  capture.read(cameraFeed);
-  runFullCalibration(cameraFeed);
+  runFullCalibration(capture, ball);
 
   /************************************************************************/
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
@@ -434,6 +575,7 @@ int main(int argc, char* argv[]) {
 	while(1) {
 		//store image to matrix
 		capture.read(cameraFeed);
+
 		//convert frame from BGR to HSV colorspace
 
 //    system("wget -q \"http://192.168.1.222/admin-bin/ccam.cgi?opt=vxyhc&ww=2048&wh=1536\" -O image.jpg");
@@ -450,36 +592,21 @@ int main(int argc, char* argv[]) {
 
 		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
-		if(calibrationMode==true) {
-		  //if in calibration mode, we track objects based on the HSV slider values.
-		  inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
+    inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
+    // Erode, then dialate to get a cleaner image
+    morphOps(threshold);
+    trackFilteredBall(ball,threshold,HSV,cameraFeed);
 
-		  // Erode, then dialate to get a cleaner image
-		  morphOps(threshold);
+//    inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
+//    // Erode, then dialate to get a cleaner image
+//    morphOps(threshold);
+//    trackFilteredRobot(home1,threshold,HSV,cameraFeed);
 
-		  imshow(windowName2,threshold);
-		  trackFilteredRobot(home1,threshold,HSV,cameraFeed);
-		}
-		else {
-		  inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
-		  // Erode, then dialate to get a cleaner image
-		  morphOps(threshold);
-		  trackFilteredBall(ball,threshold,HSV,cameraFeed);
-
-      inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
-      // Erode, then dialate to get a cleaner image
-      morphOps(threshold);
-      trackFilteredBall(ball,threshold,HSV,cameraFeed);
-
-//      inRange(HSV,away1.getHSVmin(),away1.getHSVmax(),threshold);
-//      // Erode, then dialate to get a cleaner image
-//      morphOps(threshold);
-//      trackFilteredRobot(away1,threshold,HSV,cameraFeed);
-
-		}
 
     // Show Field Outline
-    Rect fieldOutline(field_center_x, field_center_y, field_width, field_height);
+    field_origin_x = field_center_x - (field_width/2);
+    field_origin_y = field_center_y - (field_height/2);
+    Rect fieldOutline(field_origin_x, field_origin_y, field_width, field_height);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
 		imshow(windowName,cameraFeed);
 
