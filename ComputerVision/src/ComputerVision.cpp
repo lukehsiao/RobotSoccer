@@ -407,7 +407,7 @@ int main(int argc, char* argv[]) {
 
 	if(calibrationMode){
 		//create slider bars for HSV filtering
-		createTrackbars();
+		createHSVTrackbars();
 	}
 	//video capture object to acquire webcam feed
 	const string videoStreamAddress = "http://192.168.1.126:8080/?action=stream?dummy=param.mjpg";
