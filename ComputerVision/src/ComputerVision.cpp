@@ -19,8 +19,6 @@
 #include "Robot.h"
 #include "Object.h"
 
-
-
 #define PI 3.14159265
 #define MIN_CHANGE 5
 #define MAX_CHANGE 1000
@@ -75,7 +73,8 @@ string intToString(int number) {
   ss << number;
   return ss.str();
 }
-void createTrackbars() {
+
+void createHSVTrackbars() {
 	//create window for trackbars
 	namedWindow(trackbarWindowName,0);
 
@@ -100,9 +99,9 @@ Point convertCoordinates(Point imageCoordinates) {
   int field_y;
   Point result;
 
-  field_x = img_x - FIELD_CENTER_X;
+  field_x = img_x - field_center_x;
 
-  field_y = FIELD_CENTER_Y - img_y;
+  field_y = field_center_y - img_y;
 
   result.x = field_x;
   result.y = field_y;
@@ -377,13 +376,22 @@ void calibrateBall() {
 }
 
 // Generates prompts for field calibration of size/center
-void calibrateField() {
+void calibrateField(Mat &cameraFeed) {
+  // Show Field Outline
+  // Set Initial Field Values
+  field_center_x = 60;
+  field_center_y = 40;
+  field_width = 720;
+  field_height = 400;
 
+  Rect fieldOutline(field_center_x, field_center_y, field_width, field_height);
+  rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
+  imshow(windowName,cameraFeed);
 }
 
 // Generates all the calibration prompts (field + ball + robots)
-void runFullCalibration() {
-  calibrateField();
+void runFullCalibration(Mat &cameraFeed) {
+  calibrateField(cameraFeed);
   calibrateBall();
   calibrateRobot_Home1();
 }
@@ -415,6 +423,10 @@ int main(int argc, char* argv[]) {
   Robot home1(HOME), home2(HOME);
   Robot away1(AWAY), away2(AWAY);
   Ball ball;
+
+  // Calibrate the camera first
+  capture.read(cameraFeed);
+  runFullCalibration(cameraFeed);
 
   /************************************************************************/
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
