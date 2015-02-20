@@ -148,6 +148,7 @@ void drawRobot(Robot newRobot, Mat &frame) {
   int real_x = newRobot.get_x_pos();
   int real_y = newRobot.get_y_pos();
 
+  // TODO there may be some error in this value to do compensating for the noise
   circle(frame,cv::Point(x,y),10, Scalar(0,0,255));
   putText(frame,"(" + intToString(real_x)+ "," + intToString(real_y) + ")",
           Point(x,y+20),1,1,Scalar(0,255,0));
