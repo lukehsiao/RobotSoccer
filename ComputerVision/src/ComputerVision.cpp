@@ -639,7 +639,7 @@ int main(int argc, char* argv[]) {
 	const string videoStreamAddress = "http://192.168.1.126:8080/?action=stream?dummy=param.mjpg";
 	VideoCapture capture;
 
-	capture.open(videoStreamAddress); //set to 0 to use the webcam
+	capture.open(1); //set to 0 to use the webcam
 
 	//set height and width of capture frame
 	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
@@ -663,18 +663,10 @@ int main(int argc, char* argv[]) {
 		capture.read(cameraFeed);
 
 		//convert frame from BGR to HSV colorspace
-
-//    system("wget -q \"http://192.168.1.222/admin-bin/ccam.cgi?opt=vxyhc&ww=2048&wh=1536\" -O image.jpg");
-//
-//    // Use OpenCV to open "image.jpg" here and dump into mat
-//    //cameraFeed = imread("image.jpg", CV_LOAD_IMAGE_COLOR);
-//
-//    //Crop out stuff
-//    if (cameraFeed.cols < 700 || cameraFeed.rows < 600) {
-//      continue;
-//    }
-//    Rect myROI(60,140,920,470);
-//    cameraFeed = cameraFeed(myROI);
+		field_origin_x = field_center_x - (field_width/2);
+		field_origin_y = field_center_y - (field_height/2);
+    Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
+    cameraFeed = cameraFeed(myROI);
 
 		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
@@ -690,8 +682,6 @@ int main(int argc, char* argv[]) {
 
 
     // Show Field Outline
-    field_origin_x = field_center_x - (field_width/2);
-    field_origin_y = field_center_y - (field_height/2);
     Rect fieldOutline(field_origin_x, field_origin_y, field_width, field_height);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
 		imshow(windowName,cameraFeed);
