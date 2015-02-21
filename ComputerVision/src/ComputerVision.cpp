@@ -390,6 +390,8 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
   int s_max;
   int v_min;
   int v_max;
+  int field_origin_x;
+  int field_origin_y;
 
   //create trackbars
   createHSVTrackbars();
@@ -404,7 +406,14 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
 
   // Wait forever until user sets the values
    while (1) {
+      //store image to matrix
       capture.read(cameraFeed);
+
+      //convert frame from BGR to HSV colorspace
+      field_origin_x = field_center_x - (field_width/2);
+      field_origin_y = field_center_y - (field_height/2);
+      Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
+      cameraFeed = cameraFeed(myROI);
       cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
       //if in calibration mode, we track objects based on the HSV slider values.
@@ -477,6 +486,8 @@ int s_min;
 int s_max;
 int v_min;
 int v_max;
+int field_origin_x;
+int field_origin_y;
 
 //create trackbars
 createHSVTrackbars();
@@ -491,7 +502,14 @@ setTrackbarPos( "V_MAX", trackbarWindowName, 255);
 
 // Wait forever until user sets the values
  while (1) {
+    //store image to matrix
     capture.read(cameraFeed);
+
+    //convert frame from BGR to HSV colorspace
+    field_origin_x = field_center_x - (field_width/2);
+    field_origin_y = field_center_y - (field_height/2);
+    Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
+    cameraFeed = cameraFeed(myROI);
     cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
     //if in calibration mode, we track objects based on the HSV slider values.
@@ -682,8 +700,8 @@ int main(int argc, char* argv[]) {
 
 
     // Show Field Outline
-    Rect fieldOutline(field_origin_x, field_origin_y, field_width, field_height);
-    rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
+//    Rect fieldOutline(field_origin_x, field_origin_y, field_width, field_height);
+//    rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
 		imshow(windowName,cameraFeed);
 
 		//delay 30ms so that screen can refresh.
