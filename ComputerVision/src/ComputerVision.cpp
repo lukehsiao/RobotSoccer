@@ -168,18 +168,22 @@ void drawAllRobots(vector<Robot> robots_to_draw, Mat &frame) {
 // This function reduces the noise of the image by eroding the image first
 // then dialating the remaining image to produce cleaner objects
 void morphOps(Mat &thresh) {
-	//create structuring element that will be used to "dilate" and "erode" image.
+  //create structuring element that will be used to "dilate" and "erode" image.
 
-	//the element chosen here is a 3px by 3px rectangle
-	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(2,2));
-	//dilate with larger element so make sure object is nicely visible
-	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(7,7));
+  //the element chosen here is a 3px by 3px rectangle
+  Mat erodeElement = getStructuringElement( MORPH_RECT,Size(2,2));
+  //dilate with larger element so make sure object is nicely visible
+  Mat dilateElement = getStructuringElement( MORPH_RECT,Size(3,3));
 
-	erode(thresh,thresh,erodeElement);
+  erode(thresh,thresh,erodeElement);
   dilate(thresh,thresh,dilateElement);
 
-	erode(thresh,thresh,erodeElement);
-	dilate(thresh,thresh,dilateElement);
+  erodeElement = getStructuringElement( MORPH_RECT,Size(3,3));
+  //dilate with larger element so make sure object is nicely visible
+  dilateElement = getStructuringElement( MORPH_RECT,Size(6,6));
+
+  erode(thresh,thresh,erodeElement);
+  dilate(thresh,thresh,dilateElement);
 }
 
 // Function specific for tracking robots. Will calculate the center of the robot as
@@ -241,6 +245,14 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
     }
     else {
       intAngle = 360-intAngle;
+    }
+
+    // Correct angle to the Robot's X-axis
+    if (intAngle > 90) {
+      intAngle = intAngle - 90;
+    }
+    else {
+      intAngle = 360 - intAngle;
     }
 
     // TODO Filtering bad data (if the change in xpos or ypos is too large, ignore data
@@ -396,12 +408,12 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
   //create trackbars
   createHSVTrackbars();
 
-  // Set Trackbar intial values to near Yellow
+  // Set Trackbar intial values to near Red
   setTrackbarPos( "H_MIN", trackbarWindowName, 0);
-  setTrackbarPos( "H_MAX", trackbarWindowName, 35);
+  setTrackbarPos( "H_MAX", trackbarWindowName, 15);
   setTrackbarPos( "S_MIN", trackbarWindowName, 0);
   setTrackbarPos( "S_MAX", trackbarWindowName, 255);
-  setTrackbarPos( "V_MIN", trackbarWindowName, 225);
+  setTrackbarPos( "V_MIN", trackbarWindowName, 195);
   setTrackbarPos( "V_MAX", trackbarWindowName, 255);
 
   // Wait forever until user sets the values
@@ -493,11 +505,11 @@ int field_origin_y;
 createHSVTrackbars();
 
 // Set Trackbar intial values to near Yellow
-setTrackbarPos( "H_MIN", trackbarWindowName, 20);
-setTrackbarPos( "H_MAX", trackbarWindowName, 45);
-setTrackbarPos( "S_MIN", trackbarWindowName, 120);
+setTrackbarPos( "H_MIN", trackbarWindowName, 30);
+setTrackbarPos( "H_MAX", trackbarWindowName, 65);
+setTrackbarPos( "S_MIN", trackbarWindowName, 0);
 setTrackbarPos( "S_MAX", trackbarWindowName, 255);
-setTrackbarPos( "V_MIN", trackbarWindowName, 150);
+setTrackbarPos( "V_MIN", trackbarWindowName, 180);
 setTrackbarPos( "V_MAX", trackbarWindowName, 255);
 
 // Wait forever until user sets the values
@@ -572,6 +584,13 @@ setTrackbarPos( "V_MAX", trackbarWindowName, 255);
 
 // Generates prompts for field calibration of size/center
 void calibrateField(VideoCapture capture) {
+
+  // Set Initial Field Values
+  field_center_x = 318;
+  field_center_y = 245;
+  field_width = 610;
+  field_height = 410;
+
   Mat cameraFeed;
   int field_origin_x;
   int field_origin_y;
@@ -638,12 +657,6 @@ void runFullCalibration(VideoCapture capture, Ball &ball, Robot &Home1) {
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
 	bool calibrationMode = true;
-
-  // Set Initial Field Values
-  field_center_x = 300;
-  field_center_y = 300;
-  field_width = 720;
-  field_height = 400;
 
   int field_origin_x;
   int field_origin_y;
