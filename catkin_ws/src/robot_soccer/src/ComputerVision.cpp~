@@ -19,6 +19,10 @@
 #include "Robot.h"
 #include "Object.h"
 
+#include "ros/ros.h"
+#include "std_msgs/String.h"
+#include "robot_soccer/locations.h"
+
 #define PI 3.14159265
 #define MIN_CHANGE 5
 #define MAX_CHANGE 1000
@@ -57,8 +61,8 @@ int field_center_x_max = 500;
 int field_center_y_max = 500;
 
 //default capture width and height
-const int FRAME_WIDTH = 1024;
-const int FRAME_HEIGHT = 768;
+const int FRAME_WIDTH = 1280;
+const int FRAME_HEIGHT = 720;
 
 //max number of objects to be detected in frame
 const int MAX_NUM_OBJECTS=50;
@@ -168,22 +172,22 @@ void drawAllRobots(vector<Robot> robots_to_draw, Mat &frame) {
 // This function reduces the noise of the image by eroding the image first
 // then dialating the remaining image to produce cleaner objects
 void morphOps(Mat &thresh) {
-  //create structuring element that will be used to "dilate" and "erode" image.
+	//create structuring element that will be used to "dilate" and "erode" image.
 
-  //the element chosen here is a 3px by 3px rectangle
-  Mat erodeElement = getStructuringElement( MORPH_RECT,Size(2,2));
-  //dilate with larger element so make sure object is nicely visible
-  Mat dilateElement = getStructuringElement( MORPH_RECT,Size(3,3));
+	//the element chosen here is a 3px by 3px rectangle
+	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(2,2));
+	//dilate with larger element so make sure object is nicely visible
+	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(3,3));
 
-  erode(thresh,thresh,erodeElement);
+	erode(thresh,thresh,erodeElement);
   dilate(thresh,thresh,dilateElement);
-
+  
   erodeElement = getStructuringElement( MORPH_RECT,Size(3,3));
-  //dilate with larger element so make sure object is nicely visible
-  dilateElement = getStructuringElement( MORPH_RECT,Size(6,6));
+	//dilate with larger element so make sure object is nicely visible
+	dilateElement = getStructuringElement( MORPH_RECT,Size(6,6));
 
-  erode(thresh,thresh,erodeElement);
-  dilate(thresh,thresh,dilateElement);
+	erode(thresh,thresh,erodeElement);
+	dilate(thresh,thresh,dilateElement);
 }
 
 // Function specific for tracking robots. Will calculate the center of the robot as
@@ -215,7 +219,7 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
       c2 = 1;
     }
 
-    // Get moments
+    // Get momentsf
     vector<Moments> robotMoments(contours.size());
     for (unsigned i = 0; i < contours.size(); i++) {
       robotMoments[i] = moments(contours[i], false);
@@ -246,7 +250,7 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
     else {
       intAngle = 360-intAngle;
     }
-
+    
     // Correct angle to the Robot's X-axis
     if (intAngle > 90) {
       intAngle = intAngle - 90;
@@ -254,6 +258,7 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
     else {
       intAngle = 360 - intAngle;
     }
+
 
     // TODO Filtering bad data (if the change in xpos or ypos is too large, ignore data
     // Set Robot variables
@@ -489,31 +494,31 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
 
 // Generates prompts for calibration of the color ball
 void calibrateBall(VideoCapture capture, Ball &ball) {
-Mat cameraFeed;
-Mat HSV;
-Mat threshold;
-int h_min;
-int h_max;
-int s_min;
-int s_max;
-int v_min;
-int v_max;
-int field_origin_x;
-int field_origin_y;
+  Mat cameraFeed;
+  Mat HSV;
+  Mat threshold;
+  int h_min;
+  int h_max;
+  int s_min;
+  int s_max;
+  int v_min;
+  int v_max;
+  int field_origin_x;
+  int field_origin_y;
 
-//create trackbars
-createHSVTrackbars();
+  //create trackbars
+  createHSVTrackbars();
 
-// Set Trackbar intial values to near Yellow
-setTrackbarPos( "H_MIN", trackbarWindowName, 30);
-setTrackbarPos( "H_MAX", trackbarWindowName, 65);
-setTrackbarPos( "S_MIN", trackbarWindowName, 0);
-setTrackbarPos( "S_MAX", trackbarWindowName, 255);
-setTrackbarPos( "V_MIN", trackbarWindowName, 180);
-setTrackbarPos( "V_MAX", trackbarWindowName, 255);
+  // Set Trackbar intial values to near Yellow
+  setTrackbarPos( "H_MIN", trackbarWindowName, 30);
+  setTrackbarPos( "H_MAX", trackbarWindowName, 65);
+  setTrackbarPos( "S_MIN", trackbarWindowName, 0);
+  setTrackbarPos( "S_MAX", trackbarWindowName, 255);
+  setTrackbarPos( "V_MIN", trackbarWindowName, 180);
+  setTrackbarPos( "V_MAX", trackbarWindowName, 255);
 
-// Wait forever until user sets the values
- while (1) {
+  // Wait forever until user sets the values
+   while (1) {
     //store image to matrix
     capture.read(cameraFeed);
 
@@ -584,13 +589,6 @@ setTrackbarPos( "V_MAX", trackbarWindowName, 255);
 
 // Generates prompts for field calibration of size/center
 void calibrateField(VideoCapture capture) {
-
-  // Set Initial Field Values
-  field_center_x = 318;
-  field_center_y = 245;
-  field_width = 610;
-  field_height = 410;
-
   Mat cameraFeed;
   int field_origin_x;
   int field_origin_y;
@@ -658,6 +656,12 @@ int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
 	bool calibrationMode = true;
 
+  // Set Initial Field Values
+  field_center_x = 318;
+  field_center_y = 245;
+  field_width = 610;
+  field_height = 410;
+
   int field_origin_x;
   int field_origin_y;
 
@@ -686,10 +690,18 @@ int main(int argc, char* argv[]) {
     runFullCalibration(capture, ball, home1);
   }
 
+  /***********************Ros Publisher************************************/
+
+  ros::init(argc, argv, "computer_vision");
+  ros::NodeHandle n;
+  ros::Publisher publisher = n.advertise<robot_soccer::locations>("locTopic", 1000);
+  ros::Rate loop_rate(10);
+
   /************************************************************************/
+
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
-	while(1) {
+	while(ros::ok()) {
 		//store image to matrix
 		capture.read(cameraFeed);
 
@@ -716,6 +728,27 @@ int main(int argc, char* argv[]) {
     Rect fieldOutline(0, 0, field_width-1, field_height-1);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
 		imshow(windowName,cameraFeed);
+		
+		/***********************Ros Publisher************************************/
+
+		// Create message object
+		robot_soccer::locations coordinates;
+		// Fill message object with values
+		coordinates.ball_x = ball.get_x_pos();
+		coordinates.ball_y = ball.get_y_pos();
+		coordinates.home1_x = home1.get_x_pos();
+		coordinates.home1_y = home1.get_y_pos();
+		coordinates.home1_theta = home1.getAngle();
+		// Print values to ROS console
+		ROS_INFO("x %d\ny %d\ntheta %d\n", coordinates.home1_x, coordinates.home1_y, coordinates.home1_theta);
+		ROS_INFO("Ball_x: %d\nBall_y: %d\n", coordinates.ball_x, coordinates.ball_y);
+		// Publish message
+		publisher.publish(coordinates);
+		// Waits the necessary time between message publications to meet the
+		// specified frequency set above (ros::Rate loop_rate(10);)
+		loop_rate.sleep();
+
+		/************************************************************************/
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
@@ -723,4 +756,5 @@ int main(int argc, char* argv[]) {
 	}
 	return 0;
 }
+
 
