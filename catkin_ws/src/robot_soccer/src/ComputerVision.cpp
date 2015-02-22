@@ -25,7 +25,7 @@
 
 #define PI 3.14159265
 #define MIN_CHANGE 2
-#define MAX_CHANGE 1000
+#define MAX_CHANGE 600
 
 // Constants for determining field coordinate systems
 //#define FIELD_WIDTH 640// 790
@@ -672,7 +672,7 @@ int main(int argc, char* argv[]) {
 	Mat HSV;
 
 	//video capture object to acquire webcam feed
-	const string videoStreamAddress = "http://192.168.1.126:8080/?action=stream?dummy=param.mjpg";
+	//const string videoStreamAddress = "http://192.168.1.126:8080/?action=stream?dummy=param.mjpg";
 	VideoCapture capture;
 
 	capture.open(1); //set to 0 to use the webcam
@@ -726,7 +726,7 @@ int main(int argc, char* argv[]) {
 
 
     // Show Field Outline
-    Rect fieldOutline(0, 0, field_width-1, field_height-1);
+    Rect fieldOutline(0, 0, field_width, field_height);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
 		imshow(windowName,cameraFeed);
 		
