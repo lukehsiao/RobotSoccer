@@ -24,7 +24,7 @@
 #include "robot_soccer/locations.h"
 
 #define PI 3.14159265
-#define MIN_CHANGE 5
+#define MIN_CHANGE 2
 #define MAX_CHANGE 1000
 
 // Constants for determining field coordinate systems
@@ -318,13 +318,11 @@ void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
 				if(area>MIN_OBJECT_AREA) {
           Point fieldPosition = convertCoordinates(Point(moment.m10/area,
                                                          moment.m01/area));
-          if(abs(fieldPosition.x - ball.get_old_x()) > MIN_CHANGE &&
-             abs(fieldPosition.x - ball.get_old_x()) < MAX_CHANGE) {
+          if(abs(fieldPosition.x - ball.get_old_x()) > MIN_CHANGE) {
             ball.set_x_pos(fieldPosition.x);
             ball.set_img_x(moment.m10/area);
           }
-          if(abs(fieldPosition.y - ball.get_old_y()) > MIN_CHANGE &&
-             abs(fieldPosition.y - ball.get_old_y()) < MAX_CHANGE) {
+          if(abs(fieldPosition.y - ball.get_old_y()) > MIN_CHANGE) {
             ball.set_y_pos(fieldPosition.y);
             ball.set_img_y(moment.m01/area);
           }
@@ -740,7 +738,7 @@ int main(int argc, char* argv[]) {
 		coordinates.home1_y = home1.get_y_pos();
 		coordinates.home1_theta = home1.getAngle();
 		// Print values to ROS console
-		ROS_INFO("x %d\ny %d\ntheta %d\n", coordinates.home1_x, coordinates.home1_y, coordinates.home1_theta);
+		ROS_INFO("\n\nx %d\ny %d\ntheta %d\n", coordinates.home1_x, coordinates.home1_y, coordinates.home1_theta);
 		ROS_INFO("Ball_x: %d\nBall_y: %d\n", coordinates.ball_x, coordinates.ball_y);
 		// Publish message
 		publisher.publish(coordinates);

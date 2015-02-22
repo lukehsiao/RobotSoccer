@@ -24,7 +24,7 @@
 #include "robot_soccer/locations.h"
 
 #define PI 3.14159265
-#define MIN_CHANGE 5
+#define MIN_CHANGE 2
 #define MAX_CHANGE 1000
 
 // Constants for determining field coordinate systems
@@ -328,6 +328,7 @@ void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
             ball.set_y_pos(fieldPosition.y);
             ball.set_img_y(moment.m01/area);
           }
+					objectFound =
 					objectFound = true;
 				}
 				else {
