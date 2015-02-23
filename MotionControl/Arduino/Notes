@@ -1,0 +1,17 @@
+for competation 2
+
+go to point
+  look at PID contrl example from 483, and PID template written in python
+  vx/vy or x/y?
+  
+How should we use the vision? constantly update the target point? 
+
+  
+guard goal:
+  almost good, except for overshoot
+  
+
+move to ball and rush goal:
+  state machine teplate
+  also need PID controller
+  state machine: init, go_to_behind_ball, rush_goal
