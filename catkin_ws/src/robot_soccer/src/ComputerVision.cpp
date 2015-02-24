@@ -24,14 +24,8 @@
 #include "robot_soccer/locations.h"
 
 #define PI 3.14159265
-#define MIN_CHANGE 2
+#define MIN_CHANGE 3
 #define MAX_CHANGE 600
-
-// Constants for determining field coordinate systems
-//#define FIELD_WIDTH 640// 790
-//#define FIELD_HEIGHT 400
-//#define FIELD_CENTER_X 320//455
-//#define FIELD_CENTER_Y 200//240
 
 using namespace cv;
 
@@ -65,7 +59,7 @@ const int FRAME_WIDTH = 1280;
 const int FRAME_HEIGHT = 720;
 
 //max number of objects to be detected in frame
-const int MAX_NUM_OBJECTS=50;
+const int MAX_NUM_OBJECTS=5;
 
 //minimum and maximum object area
 const int MIN_OBJECT_AREA = 7*7;
@@ -91,19 +85,19 @@ string intToString(int number) {
 
 
 void createHSVTrackbars() {
-	//create window for trackbars
-	namedWindow(trackbarWindowName,0);
+  //create window for trackbars
+  namedWindow(trackbarWindowName,0);
 
-	//create trackbars and insert them into window
-	//3 parameters are: the address of the variable that is changing when the trackbar is moved(eg.H_LOW),
-	//the max value the trackbar can move (eg. H_HIGH), 
-	//and the function that is called whenever the trackbar is moved(eg. on_trackbar)
-	createTrackbar( "H_MIN", trackbarWindowName, &H_MIN, H_MAX, on_trackbar );
-	createTrackbar( "H_MAX", trackbarWindowName, &H_MAX, H_MAX, on_trackbar );
-	createTrackbar( "S_MIN", trackbarWindowName, &S_MIN, S_MAX, on_trackbar );
-	createTrackbar( "S_MAX", trackbarWindowName, &S_MAX, S_MAX, on_trackbar );
-	createTrackbar( "V_MIN", trackbarWindowName, &V_MIN, V_MAX, on_trackbar );
-	createTrackbar( "V_MAX", trackbarWindowName, &V_MAX, V_MAX, on_trackbar );
+  //create trackbars and insert them into window
+  //3 parameters are: the address of the variable that is changing when the trackbar is moved(eg.H_LOW),
+  //the max value the trackbar can move (eg. H_HIGH), 
+  //and the function that is called whenever the trackbar is moved(eg. on_trackbar)
+  createTrackbar( "H_MIN", trackbarWindowName, &H_MIN, H_MAX, on_trackbar );
+  createTrackbar( "H_MAX", trackbarWindowName, &H_MAX, H_MAX, on_trackbar );
+  createTrackbar( "S_MIN", trackbarWindowName, &S_MIN, S_MAX, on_trackbar );
+  createTrackbar( "S_MAX", trackbarWindowName, &S_MAX, S_MAX, on_trackbar );
+  createTrackbar( "V_MIN", trackbarWindowName, &V_MIN, V_MAX, on_trackbar );
+  createTrackbar( "V_MAX", trackbarWindowName, &V_MAX, V_MAX, on_trackbar );
 }
 
 //Converts from image coordinates to field coordinates
@@ -126,9 +120,9 @@ Point convertCoordinates(Point imageCoordinates) {
 
 // Places a small circle on the object
 void drawObject(int x,int y,Mat &frame) {
-	circle(frame,cv::Point(x,y),10,cv::Scalar(0,0,255));
-	putText(frame,intToString(x)+ " , " + intToString(y),
-	        Point(x,y+20),1,1,Scalar(0,255,0));
+  circle(frame,cv::Point(x,y),10,cv::Scalar(0,0,255));
+  putText(frame,intToString(x)+ " , " + intToString(y),
+          Point(x,y+20),1,1,Scalar(0,255,0));
 }
 
 void drawBall(Ball soccerBall, Mat &frame) {
@@ -172,22 +166,22 @@ void drawAllRobots(vector<Robot> robots_to_draw, Mat &frame) {
 // This function reduces the noise of the image by eroding the image first
 // then dialating the remaining image to produce cleaner objects
 void morphOps(Mat &thresh) {
-	//create structuring element that will be used to "dilate" and "erode" image.
+  //create structuring element that will be used to "dilate" and "erode" image.
 
-	//the element chosen here is a 3px by 3px rectangle
-	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(2,2));
-	//dilate with larger element so make sure object is nicely visible
-	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(3,3));
+  //the element chosen here is a 3px by 3px rectangle
+  Mat erodeElement = getStructuringElement( MORPH_RECT,Size(2,2));
+  //dilate with larger element so make sure object is nicely visible
+  Mat dilateElement = getStructuringElement( MORPH_RECT,Size(3,3));
 
-	erode(thresh,thresh,erodeElement);
+  erode(thresh,thresh,erodeElement);
   dilate(thresh,thresh,dilateElement);
   
   erodeElement = getStructuringElement( MORPH_RECT,Size(3,3));
-	//dilate with larger element so make sure object is nicely visible
-	dilateElement = getStructuringElement( MORPH_RECT,Size(6,6));
+  //dilate with larger element so make sure object is nicely visible
+  dilateElement = getStructuringElement( MORPH_RECT,Size(6,6));
 
-	erode(thresh,thresh,erodeElement);
-	dilate(thresh,thresh,dilateElement);
+  erode(thresh,thresh,erodeElement);
+  dilate(thresh,thresh,dilateElement);
 }
 
 // Function specific for tracking robots. Will calculate the center of the robot as
@@ -269,13 +263,13 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
 
     Point fieldPosition = convertCoordinates(Point((int)centerPoints[c1].x,
                                                    (int)centerPoints[c1].y));
-    if (abs(fieldPosition.x - robot.get_old_x()) > MIN_CHANGE &&
-        abs(fieldPosition.x - robot.get_old_x()) < MAX_CHANGE) {
+    if (abs(fieldPosition.x - robot.get_x_pos()) > MIN_CHANGE &&
+        abs(fieldPosition.x - robot.get_x_pos()) < MAX_CHANGE) {
       robot.set_x_pos(fieldPosition.x);
       robot.set_img_x((int)centerPoints[c1].x);
     }
-    if (abs(fieldPosition.y - robot.get_old_y()) > MIN_CHANGE &&
-        abs(fieldPosition.y - robot.get_old_y()) < MAX_CHANGE) {
+    if (abs(fieldPosition.y - robot.get_y_pos()) > MIN_CHANGE &&
+        abs(fieldPosition.y - robot.get_y_pos()) < MAX_CHANGE) {
       robot.set_y_pos(fieldPosition.y);
       robot.set_img_y((int)centerPoints[c1].y);
     }
@@ -289,106 +283,68 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
 
 void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
 
-	Mat temp;
-	threshold.copyTo(temp);
-
-	//these two vectors needed for output of findContours
-	vector< vector<Point> > contours;
-	vector<Vec4i> hierarchy;
-
-	//find contours of filtered image using openCV findContours function
-	findContours(temp,contours,hierarchy,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE );
-
-	//use moments method to find our filtered object
-	//double refArea = 0;
-	bool objectFound = false;
-	if (hierarchy.size() > 0) {
-		int numObjects = hierarchy.size();
-		//if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
-		if(numObjects<MAX_NUM_OBJECTS){
-			for (int index = 0; index >= 0; index = hierarchy[index][0]) {
-
-				Moments moment = moments((Mat)contours[index]);
-				double area = moment.m00;
-
-				//if the area is less than 20 px by 20px then it is probably just noise
-				//if the area is the same as the 3/2 of the image size, probably just a bad filter
-				//we only want the object with the largest area so we safe a reference area each
-				//iteration and compare it to the area in the next iteration.
-				if(area>MIN_OBJECT_AREA) {
-          Point fieldPosition = convertCoordinates(Point(moment.m10/area,
-                                                         moment.m01/area));
-          if(abs(fieldPosition.x - ball.get_old_x()) > MIN_CHANGE &&
-             abs(fieldPosition.x - ball.get_old_x()) < MAX_CHANGE) {
-            ball.set_x_pos(fieldPosition.x);
-            ball.set_img_x(moment.m10/area);
-          }
-          if(abs(fieldPosition.y - ball.get_old_y()) > MIN_CHANGE &&
-             abs(fieldPosition.y - ball.get_old_y()) < MAX_CHANGE) {
-            ball.set_y_pos(fieldPosition.y);
-            ball.set_img_y(moment.m01/area);
-          }
-					objectFound =
-					objectFound = true;
-				}
-				else {
-				  objectFound = false;
-				}
-			}
-			//let user know you found an object
-			if(objectFound ==true){
-				//draw object location on screen
-				drawBall(ball,cameraFeed);}
-
-		}
-		else {
-		  putText(cameraFeed,"TOO MUCH NOISE! ADJUST FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
-		}
-	}
-}
-
-// Used for tracking or calibrating to a generic colored object
-void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
-  int x, y;
   Mat temp;
   threshold.copyTo(temp);
+  int largest_area = 0;
+  int largest_contour_index = 0;
 
   //these two vectors needed for output of findContours
   vector< vector<Point> > contours;
   vector<Vec4i> hierarchy;
 
   //find contours of filtered image using openCV findContours function
-  findContours(temp,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
+  findContours(temp,contours,hierarchy,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE);
 
   //use moments method to find our filtered object
   //double refArea = 0;
   bool objectFound = false;
-  if (hierarchy.size() > 0) {
+  
+  if (contours.size() > 0) {
     int numObjects = hierarchy.size();
     //if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
     if(numObjects<MAX_NUM_OBJECTS){
-      for (int index = 0; index >= 0; index = hierarchy[index][0]) {
-
-        Moments moment = moments((Mat)contours[index]);
-        double area = moment.m00;
-
-        //if the area is less than 20 px by 20px then it is probably just noise
-        //if the area is the same as the 3/2 of the image size, probably just a bad filter
-        //we only want the object with the largest area so we safe a reference area each
-        //iteration and compare it to the area in the next iteration.
-        if(area>MIN_OBJECT_AREA){
-          x = moment.m10/area;
-          y = moment.m01/area;
-          objectFound = true;
-        }
-        else {
-          objectFound = false;
+    
+      // Iterate over all contours to find the largest
+      for (int i = 0; i < contours.size(); i++) {
+        double tempArea = contourArea(contours[i], false); // Find area of each contour
+        if (tempArea > largest_area) {
+          largest_area = tempArea;
+          largest_contour_index = i;
         }
       }
+      
+      Moments moment = moments((Mat)contours[largest_contour_index]);
+
+      //if the area is less than 20 px by 20px then it is probably just noise
+      //if the area is the same as the 3/2 of the image size, probably just a bad filter
+      //we only want the object with the largest area so we safe a reference area each
+      //iteration and compare it to the area in the next iteration.
+      if(largest_area > MIN_OBJECT_AREA) {
+        Point fieldPosition = convertCoordinates(Point(moment.m10/moment.m00,
+                                                       moment.m01/moment.m00));
+
+        if (abs(ball.get_x_pos() - fieldPosition.x) > MIN_CHANGE) {
+          ball.set_x_pos(fieldPosition.x);
+          ball.set_img_x(moment.m10/moment.m00);
+        }
+        
+        if (abs(ball.get_y_pos() - fieldPosition.y) > MIN_CHANGE) {
+          ball.set_y_pos(fieldPosition.y);
+          ball.set_img_y(moment.m01/moment.m00);
+        }
+
+        objectFound = true;
+        
+      }
+      else {
+        objectFound = false;
+      }
+   
       //let user know you found an object
-      if(objectFound ==true){
+      if(objectFound == true){
         //draw object location on screen
-        drawObject(x, y,cameraFeed);}
+        drawBall(ball,cameraFeed);
+      }
 
     }
     else {
@@ -396,6 +352,7 @@ void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
     }
   }
 }
+
 
 // Generate prompts to calibrate colors for the Home1 robots
 void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
@@ -593,6 +550,13 @@ void calibrateField(VideoCapture capture) {
   Mat cameraFeed;
   int field_origin_x;
   int field_origin_y;
+  
+  // Set Initial Field Values
+  field_center_x = 320;
+  field_center_y = 240;
+  field_width = 639;
+  field_height = 479;
+  
   //create window for trackbars
   namedWindow(trackbarWindowName,0);
 
@@ -654,32 +618,26 @@ void runFullCalibration(VideoCapture capture, Ball &ball, Robot &Home1) {
 }
 
 int main(int argc, char* argv[]) {
-	//if we would like to calibrate our filter values, set to true.
-	bool calibrationMode = true;
-
-  // Set Initial Field Values
-  field_center_x = 318;
-  field_center_y = 245;
-  field_width = 610;
-  field_height = 410;
+  //if we would like to calibrate our filter values, set to true.
+  bool calibrationMode = true;
 
   int field_origin_x;
   int field_origin_y;
 
-	//Matrix to store each frame of the webcam feed
-	Mat cameraFeed;
-	Mat threshold;
-	Mat HSV;
+  //Matrix to store each frame of the webcam feed
+  Mat cameraFeed;
+  Mat threshold;
+  Mat HSV;
 
-	//video capture object to acquire webcam feed
-	//const string videoStreamAddress = "http://192.168.1.126:8080/?action=stream?dummy=param.mjpg";
-	VideoCapture capture;
+  //video capture object to acquire webcam feed
+  //const string videoStreamAddress = "http://192.168.1.126:8080/?action=stream?dummy=param.mjpg";
+  VideoCapture capture;
 
-	capture.open(1); //set to 0 to use the webcam
+  capture.open(0); //set to 0 to use the webcam
 
-	//set height and width of capture frame
-	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
-	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
+  //set height and width of capture frame
+  capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
+  capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
 
   // When NOT in calibration mode, use actual hard-coded color values
   Robot home1(HOME), home2(HOME);
@@ -700,19 +658,19 @@ int main(int argc, char* argv[]) {
 
   /************************************************************************/
 
-	//start an infinite loop where webcam feed is copied to cameraFeed matrix
-	//all of our operations will be performed within this loop
-	while(ros::ok()) {
-		//store image to matrix
-		capture.read(cameraFeed);
+  //start an infinite loop where webcam feed is copied to cameraFeed matrix
+  //all of our operations will be performed within this loop
+  while(ros::ok()) {
+    //store image to matrix
+    capture.read(cameraFeed);
 
-		//convert frame from BGR to HSV colorspace
-		field_origin_x = field_center_x - (field_width/2);
-		field_origin_y = field_center_y - (field_height/2);
+    //convert frame from BGR to HSV colorspace
+    field_origin_x = field_center_x - (field_width/2);
+    field_origin_y = field_center_y - (field_height/2);
     Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
     cameraFeed = cameraFeed(myROI);
 
-		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
+    cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
     inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
     // Erode, then dialate to get a cleaner image
@@ -728,34 +686,34 @@ int main(int argc, char* argv[]) {
     // Show Field Outline
     Rect fieldOutline(0, 0, field_width, field_height);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
-		imshow(windowName,cameraFeed);
-		
-		/***********************Ros Publisher************************************/
+    imshow(windowName,cameraFeed);
+    
+    /***********************Ros Publisher************************************/
 
-		// Create message object
-		robot_soccer::locations coordinates;
-		// Fill message object with values
-		coordinates.ball_x = ball.get_x_pos();
-		coordinates.ball_y = ball.get_y_pos();
-		coordinates.home1_x = home1.get_x_pos();
-		coordinates.home1_y = home1.get_y_pos();
-		coordinates.home1_theta = home1.getAngle();
-		// Print values to ROS console
-		ROS_INFO("\n\nx %d\ny %d\ntheta %d\n", coordinates.home1_x, coordinates.home1_y, coordinates.home1_theta);
-		ROS_INFO("Ball_x: %d\nBall_y: %d\n", coordinates.ball_x, coordinates.ball_y);
-		// Publish message
-		publisher.publish(coordinates);
-		// Waits the necessary time between message publications to meet the
-		// specified frequency set above (ros::Rate loop_rate(10);)
-		loop_rate.sleep();
+    // Create message object
+    robot_soccer::locations coordinates;
+    // Fill message object with values
+    coordinates.ball_x = ball.get_x_pos();
+    coordinates.ball_y = ball.get_y_pos();
+    coordinates.home1_x = home1.get_x_pos();
+    coordinates.home1_y = home1.get_y_pos();
+    coordinates.home1_theta = home1.getAngle();
+    // Print values to ROS console
+    ROS_INFO("\n\nx %d\ny %d\ntheta %d\n", coordinates.home1_x, coordinates.home1_y, coordinates.home1_theta);
+    ROS_INFO("Ball_x: %d\nBall_y: %d\n", coordinates.ball_x, coordinates.ball_y);
+    // Publish message
+    publisher.publish(coordinates);
+    // Waits the necessary time between message publications to meet the
+    // specified frequency set above (ros::Rate loop_rate(10);)
+    loop_rate.sleep();
 
-		/************************************************************************/
+    /************************************************************************/
 
-		//delay 30ms so that screen can refresh.
-		//image will not appear without this waitKey() command
-		waitKey(50);
-	}
-	return 0;
+    //delay 30ms so that screen can refresh.
+    //image will not appear without this waitKey() command
+    waitKey(50);
+  }
+  return 0;
 }
 
 
