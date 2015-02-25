@@ -85,7 +85,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES robot_soccer
-  CATKIN_DEPENDS roscpp rospy std_msgs message_runtime sensor_msgs cv_bridge image_transport
+  CATKIN_DEPENDS roscpp rospy std_msgs message_generation message_runtime sensor_msgs cv_bridge image_transport
 #  DEPENDS system_lib
 )
 

@@ -280,7 +280,6 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
 
 // Finds the contours (outlines) of the now filtered image and determine's its
 // center by examining its moments.
-
 void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
 
   Mat temp;
@@ -698,6 +697,7 @@ int main(int argc, char* argv[]) {
     coordinates.home1_x = home1.get_x_pos();
     coordinates.home1_y = home1.get_y_pos();
     coordinates.home1_theta = home1.getAngle();
+    coordinates.header.stamp = ros::Time::now();
     // Print values to ROS console
     ROS_INFO("\n\nx %d\ny %d\ntheta %d\n", coordinates.home1_x, coordinates.home1_y, coordinates.home1_theta);
     ROS_INFO("Ball_x: %d\nBall_y: %d\n", coordinates.ball_x, coordinates.ball_y);
