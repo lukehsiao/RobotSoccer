@@ -59,7 +59,7 @@ const int FRAME_WIDTH = 1280;
 const int FRAME_HEIGHT = 720;
 
 //max number of objects to be detected in frame
-const int MAX_NUM_OBJECTS=5;
+const int MAX_NUM_OBJECTS=50;
 
 //minimum and maximum object area
 const int MIN_OBJECT_AREA = 7*7;
@@ -250,7 +250,7 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
       intAngle = intAngle - 90;
     }
     else {
-      intAngle = 360 - intAngle;
+      intAngle = 270 + intAngle;
     }
 
 
