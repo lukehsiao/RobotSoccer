@@ -215,7 +215,7 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
       c2 = 1;
     }
 
-    // Get moments
+    // Get momentsf
     vector<Moments> robotMoments(contours.size());
     for (unsigned i = 0; i < contours.size(); i++) {
       robotMoments[i] = moments(contours[i], false);
@@ -255,6 +255,7 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
       intAngle = 360 - intAngle;
     }
 
+
     // TODO Filtering bad data (if the change in xpos or ypos is too large, ignore data
     // Set Robot variables
 
@@ -264,13 +265,13 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
 
     Point fieldPosition = convertCoordinates(Point((int)centerPoints[c1].x,
                                                    (int)centerPoints[c1].y));
-    if (abs(fieldPosition.x - robot.get_old_x()) > MIN_CHANGE &&
-        abs(fieldPosition.x - robot.get_old_x()) < MAX_CHANGE) {
+    if (abs(fieldPosition.x - robot.get_x_pos()) > MIN_CHANGE &&
+        abs(fieldPosition.x - robot.get_x_pos()) < MAX_CHANGE) {
       robot.set_x_pos(fieldPosition.x);
       robot.set_img_x((int)centerPoints[c1].x);
     }
-    if (abs(fieldPosition.y - robot.get_old_y()) > MIN_CHANGE &&
-        abs(fieldPosition.y - robot.get_old_y()) < MAX_CHANGE) {
+    if (abs(fieldPosition.y - robot.get_y_pos()) > MIN_CHANGE &&
+        abs(fieldPosition.y - robot.get_y_pos()) < MAX_CHANGE) {
       robot.set_y_pos(fieldPosition.y);
       robot.set_img_y((int)centerPoints[c1].y);
     }
@@ -281,108 +282,70 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
 
 // Finds the contours (outlines) of the now filtered image and determine's its
 // center by examining its moments.
-
 void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
 
-	Mat temp;
-	threshold.copyTo(temp);
-
-	//these two vectors needed for output of findContours
-	vector< vector<Point> > contours;
-	vector<Vec4i> hierarchy;
-
-	//find contours of filtered image using openCV findContours function
-	findContours(temp,contours,hierarchy,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE );
-
-	//use moments method to find our filtered object
-	//double refArea = 0;
-	bool objectFound = false;
-	if (hierarchy.size() > 0) {
-		int numObjects = hierarchy.size();
-		//if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
-		if(numObjects<MAX_NUM_OBJECTS){
-			for (int index = 0; index >= 0; index = hierarchy[index][0]) {
-
-				Moments moment = moments((Mat)contours[index]);
-				double area = moment.m00;
-
-				//if the area is less than 20 px by 20px then it is probably just noise
-				//if the area is the same as the 3/2 of the image size, probably just a bad filter
-				//we only want the object with the largest area so we safe a reference area each
-				//iteration and compare it to the area in the next iteration.
-				if(area>MIN_OBJECT_AREA) {
-          Point fieldPosition = convertCoordinates(Point(moment.m10/area,
-                                                         moment.m01/area));
-          if(abs(fieldPosition.x - ball.get_old_x()) > MIN_CHANGE &&
-             abs(fieldPosition.x - ball.get_old_x()) < MAX_CHANGE) {
-            ball.set_x_pos(fieldPosition.x);
-            ball.set_img_x(moment.m10/area);
-          }
-          if(abs(fieldPosition.y - ball.get_old_y()) > MIN_CHANGE &&
-             abs(fieldPosition.y - ball.get_old_y()) < MAX_CHANGE) {
-            ball.set_y_pos(fieldPosition.y);
-            ball.set_img_y(moment.m01/area);
-          }
-					objectFound = true;
-				}
-				else {
-				  objectFound = false;
-				}
-			}
-			//let user know you found an object
-			if(objectFound ==true){
-				//draw object location on screen
-				drawBall(ball,cameraFeed);}
-
-		}
-		else {
-		  putText(cameraFeed,"TOO MUCH NOISE! ADJUST FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
-		}
-	}
-}
-
-// Used for tracking or calibrating to a generic colored object
-void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
-  int x, y;
   Mat temp;
   threshold.copyTo(temp);
+  int largest_area = 0;
+  int largest_contour_index = 0;
 
   //these two vectors needed for output of findContours
   vector< vector<Point> > contours;
   vector<Vec4i> hierarchy;
 
   //find contours of filtered image using openCV findContours function
-  findContours(temp,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
+  findContours(temp,contours,hierarchy,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE);
 
   //use moments method to find our filtered object
   //double refArea = 0;
   bool objectFound = false;
-  if (hierarchy.size() > 0) {
+
+  if (contours.size() > 0) {
     int numObjects = hierarchy.size();
     //if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
     if(numObjects<MAX_NUM_OBJECTS){
-      for (int index = 0; index >= 0; index = hierarchy[index][0]) {
 
-        Moments moment = moments((Mat)contours[index]);
-        double area = moment.m00;
-
-        //if the area is less than 20 px by 20px then it is probably just noise
-        //if the area is the same as the 3/2 of the image size, probably just a bad filter
-        //we only want the object with the largest area so we safe a reference area each
-        //iteration and compare it to the area in the next iteration.
-        if(area>MIN_OBJECT_AREA){
-          x = moment.m10/area;
-          y = moment.m01/area;
-          objectFound = true;
-        }
-        else {
-          objectFound = false;
+      // Iterate over all contours to find the largest
+      for (unsigned i = 0; i < contours.size(); i++) {
+        double tempArea = contourArea(contours[i], false); // Find area of each contour
+        if (tempArea > largest_area) {
+          largest_area = tempArea;
+          largest_contour_index = i;
         }
       }
+
+      Moments moment = moments((Mat)contours[largest_contour_index]);
+
+      //if the area is less than 20 px by 20px then it is probably just noise
+      //if the area is the same as the 3/2 of the image size, probably just a bad filter
+      //we only want the object with the largest area so we safe a reference area each
+      //iteration and compare it to the area in the next iteration.
+      if(largest_area > MIN_OBJECT_AREA) {
+        Point fieldPosition = convertCoordinates(Point(moment.m10/moment.m00,
+                                                       moment.m01/moment.m00));
+
+        if (abs(ball.get_x_pos() - fieldPosition.x) > MIN_CHANGE) {
+          ball.set_x_pos(fieldPosition.x);
+          ball.set_img_x(moment.m10/moment.m00);
+        }
+
+        if (abs(ball.get_y_pos() - fieldPosition.y) > MIN_CHANGE) {
+          ball.set_y_pos(fieldPosition.y);
+          ball.set_img_y(moment.m01/moment.m00);
+        }
+
+        objectFound = true;
+
+      }
+      else {
+        objectFound = false;
+      }
+
       //let user know you found an object
-      if(objectFound ==true){
+      if(objectFound == true){
         //draw object location on screen
-        drawObject(x, y,cameraFeed);}
+        drawBall(ball,cameraFeed);
+      }
 
     }
     else {
@@ -390,6 +353,7 @@ void trackFilteredObject(Mat threshold, Mat HSV, Mat &cameraFeed) {
     }
   }
 }
+
 
 // Generate prompts to calibrate colors for the Home1 robots
 void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
@@ -489,31 +453,31 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
 
 // Generates prompts for calibration of the color ball
 void calibrateBall(VideoCapture capture, Ball &ball) {
-Mat cameraFeed;
-Mat HSV;
-Mat threshold;
-int h_min;
-int h_max;
-int s_min;
-int s_max;
-int v_min;
-int v_max;
-int field_origin_x;
-int field_origin_y;
+  Mat cameraFeed;
+  Mat HSV;
+  Mat threshold;
+  int h_min;
+  int h_max;
+  int s_min;
+  int s_max;
+  int v_min;
+  int v_max;
+  int field_origin_x;
+  int field_origin_y;
 
-//create trackbars
-createHSVTrackbars();
+  //create trackbars
+  createHSVTrackbars();
 
-// Set Trackbar intial values to near Yellow
-setTrackbarPos( "H_MIN", trackbarWindowName, 30);
-setTrackbarPos( "H_MAX", trackbarWindowName, 65);
-setTrackbarPos( "S_MIN", trackbarWindowName, 0);
-setTrackbarPos( "S_MAX", trackbarWindowName, 255);
-setTrackbarPos( "V_MIN", trackbarWindowName, 180);
-setTrackbarPos( "V_MAX", trackbarWindowName, 255);
+  // Set Trackbar intial values to near Yellow
+  setTrackbarPos( "H_MIN", trackbarWindowName, 30);
+  setTrackbarPos( "H_MAX", trackbarWindowName, 65);
+  setTrackbarPos( "S_MIN", trackbarWindowName, 0);
+  setTrackbarPos( "S_MAX", trackbarWindowName, 255);
+  setTrackbarPos( "V_MIN", trackbarWindowName, 180);
+  setTrackbarPos( "V_MAX", trackbarWindowName, 255);
 
-// Wait forever until user sets the values
- while (1) {
+  // Wait forever until user sets the values
+   while (1) {
     //store image to matrix
     capture.read(cameraFeed);
 
@@ -584,16 +548,16 @@ setTrackbarPos( "V_MAX", trackbarWindowName, 255);
 
 // Generates prompts for field calibration of size/center
 void calibrateField(VideoCapture capture) {
-
-  // Set Initial Field Values
-  field_center_x = 318;
-  field_center_y = 245;
-  field_width = 610;
-  field_height = 410;
-
   Mat cameraFeed;
   int field_origin_x;
   int field_origin_y;
+
+  // Set Initial Field Values
+  field_center_x = 320;
+  field_center_y = 240;
+  field_width = 639;
+  field_height = 479;
+
   //create window for trackbars
   namedWindow(trackbarWindowName,0);
 
@@ -654,6 +618,39 @@ void runFullCalibration(VideoCapture capture, Ball &ball, Robot &Home1) {
   calibrateRobot_Home1(capture, Home1);
 }
 
+Mat OR(Mat mat1, Mat mat2){
+  Mat BGR_ball; //BGR image of ball;
+  Mat BGR_robot; //BGR image of robot;
+  Mat bw_ball; //Black and white image of ball
+  Mat bw_robot;
+  Mat mat3_bw;
+  Mat mat3_BGR;
+  Mat mat3_HSV;
+
+  cvtColor(mat1,BGR_ball,COLOR_HSV2BGR);
+  cvtColor(BGR_ball,bw_ball,COLOR_BGR2GRAY);
+  cvtColor(mat2,BGR_robot,COLOR_HSV2BGR);
+  cvtColor(BGR_robot,bw_robot,COLOR_BGR2GRAY);
+  mat3_bw=bw_ball;
+
+  int col=mat1.cols;
+  int row=mat1.rows;
+
+  for (int i=0; i<col; i++)
+  {
+    for (int j=0; j<row; j++)
+    {
+      mat3_bw.at<uchar>(i,j)=bw_ball.at<uchar>(i,j)+bw_robot.at<uchar>(i,j);  //assume white=255,black=0;
+      if (mat3_bw.at<uchar>(i,j)>255)                     //b+b=0=b; w+b=255=w; w+w=510,over!
+        mat3_bw.at<uchar>(i,j)=255;
+    }// not sure is 'MAT(i,j)' the right way to
+  }
+  cvtColor(mat3_bw,mat3_BGR,COLOR_GRAY2BGR);
+  cvtColor(mat3_BGR,mat3_HSV,COLOR_BGR2HSV);
+  return mat3_HSV;
+}
+
+
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
 	bool calibrationMode = true;
@@ -663,18 +660,23 @@ int main(int argc, char* argv[]) {
 
 	//Matrix to store each frame of the webcam feed
 	Mat cameraFeed;
-	Mat threshold;
+	Mat threshold1; //threshold image of ball
+	Mat threshold2; //threshold image of robot
+	Mat threshold; //combined image
 	Mat HSV;
+	Mat bw; // black and white mat
+  Mat BGR;// BGR mat
 
 	//video capture object to acquire webcam feed
 	const string videoStreamAddress = "http://192.168.1.126:8080/?action=stream?dummy=param.mjpg";
 	VideoCapture capture;
 
-	capture.open(1); //set to 0 to use the webcam
+	capture.open(0); //set to 0 to use the webcam
 
 	//set height and width of capture frame
 	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
+
 
   // When NOT in calibration mode, use actual hard-coded color values
   Robot home1(HOME), home2(HOME);
@@ -701,21 +703,25 @@ int main(int argc, char* argv[]) {
 
 		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
-    inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
-    // Erode, then dialate to get a cleaner image
-    morphOps(threshold);
-    trackFilteredBall(ball,threshold,HSV,cameraFeed);
+    inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold1);
 
-    inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
     // Erode, then dialate to get a cleaner image
-    morphOps(threshold);
-    trackFilteredRobot(home1,threshold,HSV,cameraFeed);
+    morphOps(threshold1);
+    trackFilteredBall(ball,threshold1,HSV,cameraFeed);
 
+    inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold2);
+    // Erode, then dialate to get a cleaner image
+    morphOps(threshold2);
+    trackFilteredRobot(home1,threshold2,HSV,cameraFeed);
+
+//    // Display the filtered robot/ball images
+    threshold=OR(threshold2,threshold2);
 
     // Show Field Outline
     Rect fieldOutline(0, 0, field_width-1, field_height-1);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
 		imshow(windowName,cameraFeed);
+    imshow(windowName2,threshold);
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
