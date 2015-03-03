@@ -456,7 +456,7 @@ static bool runCalibration( Settings& s, Size& imageSize, Mat& cameraMatrix, Mat
 
     totalAvgErr = computeReprojectionErrors(objectPoints, imagePoints,
                                              rvecs, tvecs, cameraMatrix, distCoeffs, reprojErrs);
-
+                                             
     return ok;
 }
 
@@ -544,9 +544,10 @@ bool runCalibrationAndSave(Settings& s, Size imageSize, Mat&  cameraMatrix, Mat&
     vector<Mat> rvecs, tvecs;
     vector<float> reprojErrs;
     double totalAvgErr = 0;
-
+    cout << "Starting calibration..." << endl;
     bool ok = runCalibration(s,imageSize, cameraMatrix, distCoeffs, imagePoints, rvecs, tvecs,
                              reprojErrs, totalAvgErr);
+    cout << "Finished calibration..." << endl;
     cout << (ok ? "Calibration succeeded" : "Calibration failed")
         << ". avg re projection error = "  << totalAvgErr ;
 
