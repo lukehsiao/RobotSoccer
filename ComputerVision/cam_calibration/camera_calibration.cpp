@@ -335,7 +335,8 @@ int main(int argc, char* argv[])
         if( mode == CALIBRATED && s.showUndistorsed )
         {
             Mat temp = view.clone();
-            undistort(temp, view, cameraMatrix, distCoeffs);
+            undistort(temp, view, cameraMatrix, distCoeffs, 
+                getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0));
         }
 
         //------------------------------ Show image and check for input commands -------------------
