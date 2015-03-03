@@ -14,6 +14,8 @@
 #include <iostream>
 #include <stdio.h>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
 #include <opencv/cv.h>
 #include "Ball.h"
 #include "Robot.h"
@@ -60,8 +62,6 @@ int field_width_max = FRAME_WIDTH;
 int field_center_x_max = FRAME_WIDTH;
 int field_center_y_max = FRAME_HEIGHT;
 
-
-
 //max number of objects to be detected in frame
 const int MAX_NUM_OBJECTS=50;
 
@@ -76,6 +76,19 @@ const string windowName2 = "Thresholded Image";
 const string windowName3 = "After Morphological Operations";
 const string trackbarWindowName = "Trackbars";
 
+// Camera Calibration Data
+float dist_coeff[5][1] = {  {-2.0698033501549058},
+                            {9.6448611626711713},
+                            {0.0},
+                            {0.0},
+                            {-20.765851606846589}
+                         };
+
+float cam_matrix[3][3] = {  {1514.8407346906349,0.0,639.5},
+                            {0.0,1514.8407346906349,359.5},
+                            {0.0,0.0,1.0}
+                         };
+
 // This function is called whenever a trackbar changes
 void on_trackbar( int, void* ) {
   // Does nothing
@@ -87,6 +100,17 @@ string intToString(int number) {
   return ss.str();
 }
 
+// Runs the undistortion
+void undistortImage(Mat &source) {
+  // Setup Distortion matrices
+  Mat cameraMatrix = Mat(3, 3, CV_32FC1, &cam_matrix);
+  Mat distCoeffs = Mat(5, 1, CV_32FC1, &dist_coeff);
+
+  Size imageSize = source.size();
+  Mat temp = source.clone();
+  undistort(temp, source, cameraMatrix, distCoeffs,
+                  getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0));
+}
 
 void createHSVTrackbars() {
 	//create window for trackbars
@@ -385,6 +409,7 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
    while (1) {
       //store image to matrix
       capture.read(cameraFeed);
+      undistortImage(cameraFeed);
 
       //convert frame from BGR to HSV colorspace
       field_origin_x = field_center_x - (field_width/2);
@@ -481,6 +506,7 @@ void calibrateBall(VideoCapture capture, Ball &ball) {
    while (1) {
     //store image to matrix
     capture.read(cameraFeed);
+    undistortImage(cameraFeed);
 
     //convert frame from BGR to HSV colorspace
     field_origin_x = field_center_x - (field_width/2);
@@ -554,10 +580,10 @@ void calibrateField(VideoCapture capture) {
   int field_origin_y;
 
   // Set Initial Field Values
-  field_center_x = 734;
-  field_center_y = 360;
-  field_width = 913;
-  field_height = 695;
+  field_center_x = 623;
+  field_center_y = 356;
+  field_width = 828;
+  field_height = 562;
 
   //create window for trackbars
   namedWindow(trackbarWindowName,0);
@@ -580,6 +606,8 @@ void calibrateField(VideoCapture capture) {
   // Wait forever until user sets the values
   while (1) {
     capture.read(cameraFeed);
+    undistortImage(cameraFeed);
+
     // Wait for user to set values
     field_center_y = getTrackbarPos( "Field Center Y", trackbarWindowName);
     field_center_x = getTrackbarPos( "Field Center X", trackbarWindowName);
@@ -651,6 +679,7 @@ Mat OR(Mat mat1, Mat mat2){
   printf("\n\nYES!!!\n");
   return mat3_HSV;
 }
+
 
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
@@ -726,6 +755,7 @@ int main(int argc, char* argv[]) {
 
     //store image to matrix
     capture.read(cameraFeed);
+    undistortImage(cameraFeed);
 
     //convert frame from BGR to HSV colorspace
     field_origin_x = field_center_x - (field_width/2);

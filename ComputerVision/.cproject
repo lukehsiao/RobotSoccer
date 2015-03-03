@@ -50,6 +50,7 @@
 									<listOptionValue builtIn="false" value="opencv_video"/>
 									<listOptionValue builtIn="false" value="opencv_features2d"/>
 									<listOptionValue builtIn="false" value="opencv_objdetect"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="opencv_calib3d"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.961936166" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
