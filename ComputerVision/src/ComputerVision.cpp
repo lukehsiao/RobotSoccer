@@ -766,15 +766,23 @@ int main(int argc, char* argv[]) {
 
     cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
+    // Track Ball
     inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
     // Erode, then dialate to get a cleaner image
     morphOps(threshold);
     trackFilteredBall(ball,threshold,HSV,cameraFeed);
 
+    // Track Home 1
     inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
     // Erode, then dialate to get a cleaner image
     morphOps(threshold);
     trackFilteredRobot(home1,threshold,HSV,cameraFeed);
+
+    // Track Away 1
+    inRange(HSV,away1.getHSVmin(),away1.getHSVmax(),threshold);
+    // Erode, then dialate to get a cleaner image
+    morphOps(threshold);
+    trackFilteredRobot(away1,threshold,HSV,cameraFeed);
 
 
     // Show Field Outline

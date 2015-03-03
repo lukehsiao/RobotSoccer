@@ -146,7 +146,7 @@ public:
         if( inputCapture.isOpened() )
         {
             Mat view0;
-            inputCapture >> view0;
+            inputCapture.read(view0);
             view0.copyTo(result);
         }
         else if( atImageList < (int)imageList.size() )
