@@ -381,7 +381,7 @@ void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
 }
 
 // Generate prompts to calibrate colors for the Home1 robots
-void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
+void calibrateRobot(VideoCapture capture, Robot &robot) {
   Mat cameraFeed;
   Mat HSV;
   Mat threshold;
@@ -434,10 +434,10 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
       Scalar hsv_min(h_min, s_min, v_min);
       Scalar hsv_max(h_max, s_max, v_max);
 
-      Home1.setHSVmin(hsv_min);
-      Home1.setHSVmax(hsv_max);
+      robot.setHSVmin(hsv_min);
+      robot.setHSVmax(hsv_max);
 
-      trackFilteredRobot(Home1,threshold,HSV,cameraFeed);
+      trackFilteredRobot(robot,threshold,HSV,cameraFeed);
 
       imshow(windowName2,threshold);
       imshow(windowName,cameraFeed);
@@ -449,10 +449,10 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
           Scalar hsv_min(h_min, s_min, v_min);
           Scalar hsv_max(h_max, s_max, v_max);
 
-          Home1.setHSVmin(hsv_min);
-          Home1.setHSVmax(hsv_max);
+          robot.setHSVmin(hsv_min);
+          robot.setHSVmax(hsv_max);
 
-          printf("\n\nRobot Home1 HSV Values Saved!\n");
+          printf("\n\nRobot HSV Values Saved!\n");
           printf("h_min: %d\n", h_min);
           printf("h_max: %d\n", h_max);
           printf("s_min: %d\n", s_min);
@@ -641,10 +641,11 @@ void calibrateField(VideoCapture capture) {
 }
 
 // Generates all the calibration prompts (field + ball + robots)
-void runFullCalibration(VideoCapture capture, Ball &ball, Robot &Home1) {
+void runFullCalibration(VideoCapture capture, Ball &ball, Robot &Home1, Robot &Home2, Robot &Away1, Robot &Away2) {
   calibrateField(capture);
   calibrateBall(capture, ball);
-  calibrateRobot_Home1(capture, Home1);
+  calibrateRobot(capture, Home1);
+  calibrateRobot(capture, Away1);
 }
 
 Mat OR(Mat mat1, Mat mat2){
@@ -714,7 +715,7 @@ int main(int argc, char* argv[]) {
 
   if (calibrationMode == true) {
     // Calibrate the camera first
-    runFullCalibration(capture, ball, home1);
+    runFullCalibration(capture, ball, home1, home2, away1, away2);
   }
 
   /************************************************************************/
