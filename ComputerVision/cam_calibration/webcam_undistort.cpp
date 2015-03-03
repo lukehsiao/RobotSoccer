@@ -51,8 +51,6 @@ int main()
 	int numSquares = numCornersHor * numCornersVer;
 	Size board_sz = Size(numCornersHor, numCornersVer);
 
-	VideoCapture capture = VideoCapture(0);
-
 	vector < vector < Point3f > >object_points;
 	vector < vector < Point2f > >image_points;
 
@@ -61,7 +59,19 @@ int main()
 
 	Mat image;
 	Mat gray_image;
-	capture >> image;
+	
+  //video capture object to acquire webcam feed
+	const string videoStreamAddress = "http://192.168.1.90/mjpg/video.mjpg";
+	VideoCapture capture;
+
+  capture.open(videoStreamAddress); //set to 0 to use the webcam
+  
+  //set height and width of capture frame
+	capture.set(CV_CAP_PROP_FRAME_WIDTH,1280);
+	capture.set(CV_CAP_PROP_FRAME_HEIGHT,720);
+	
+	//store image to matrix
+  capture.read(image);
 
 	vector < Point3f > obj;
 	for (int j = 0; j < numSquares; j++)
@@ -87,13 +97,14 @@ int main()
 		imshow("win1", image);
 		imshow("win2", gray_image);
 
-		capture >> image;
+		capture.read(image);
     if (quit_signal) exit(0); // exit cleanly on interrupt
 		
-		int key = waitKey(20);
+		int key = waitKey(50);
 
-		if (key == 27)
+		if (key == 27) {
 			return 0;
+		}
 
 		if (key == ' ' && found != 0) {
 			image_points.push_back(corners);
@@ -122,7 +133,7 @@ int main()
 
 	Mat imageUndistorted;
 	while (1) {
-		capture >> image;
+		capture.read(image);
     if (quit_signal) exit(0); // exit cleanly on interrupt 
 		undistort(image, imageUndistorted, intrinsic, distCoeffs);
 

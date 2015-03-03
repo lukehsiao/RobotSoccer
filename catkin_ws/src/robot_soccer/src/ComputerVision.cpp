@@ -14,6 +14,8 @@
 #include <iostream>
 #include <stdio.h>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
 #include <opencv/cv.h>
 #include "Ball.h"
 #include "Robot.h"
@@ -24,8 +26,18 @@
 #include "robot_soccer/locations.h"
 
 #define PI 3.14159265
-#define MIN_CHANGE 3
-#define MAX_CHANGE 600
+#define MIN_CHANGE 5
+#define MAX_CHANGE 1000
+
+//default capture width and height
+#define FRAME_WIDTH  1280
+#define FRAME_HEIGHT 720
+
+// Constants for determining field coordinate systems
+//#define FIELD_WIDTH 640// 790
+//#define FIELD_HEIGHT 400
+//#define FIELD_CENTER_X 320//455
+//#define FIELD_CENTER_Y 200//240
 
 using namespace cv;
 
@@ -49,14 +61,10 @@ int field_height_min = 0;
 int field_width_min = 0;
 int field_center_x_min = 0;
 int field_center_y_min = 0;
-int field_height_max = 600;
-int field_width_max = 900;
-int field_center_x_max = 500;
-int field_center_y_max = 500;
-
-//default capture width and height
-const int FRAME_WIDTH = 1280;
-const int FRAME_HEIGHT = 720;
+int field_height_max = FRAME_HEIGHT;
+int field_width_max = FRAME_WIDTH;
+int field_center_x_max = FRAME_WIDTH;
+int field_center_y_max = FRAME_HEIGHT;
 
 //max number of objects to be detected in frame
 const int MAX_NUM_OBJECTS=50;
@@ -72,6 +80,19 @@ const string windowName2 = "Thresholded Image";
 const string windowName3 = "After Morphological Operations";
 const string trackbarWindowName = "Trackbars";
 
+// Camera Calibration Data
+float dist_coeff[5][1] = {  {-2.0698033501549058},
+                            {9.6448611626711713},
+                            {0.0},
+                            {0.0},
+                            {-20.765851606846589}
+                         };
+
+float cam_matrix[3][3] = {  {1514.8407346906349,0.0,639.5},
+                            {0.0,1514.8407346906349,359.5},
+                            {0.0,0.0,1.0}
+                         };
+
 // This function is called whenever a trackbar changes
 void on_trackbar( int, void* ) {
   // Does nothing
@@ -83,21 +104,32 @@ string intToString(int number) {
   return ss.str();
 }
 
+// Runs the undistortion
+void undistortImage(Mat &source) {
+  // Setup Distortion matrices
+  Mat cameraMatrix = Mat(3, 3, CV_32FC1, &cam_matrix);
+  Mat distCoeffs = Mat(5, 1, CV_32FC1, &dist_coeff);
+
+  Size imageSize = source.size();
+  Mat temp = source.clone();
+  undistort(temp, source, cameraMatrix, distCoeffs,
+                  getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0));
+}
 
 void createHSVTrackbars() {
-  //create window for trackbars
-  namedWindow(trackbarWindowName,0);
+	//create window for trackbars
+	namedWindow(trackbarWindowName,0);
 
-  //create trackbars and insert them into window
-  //3 parameters are: the address of the variable that is changing when the trackbar is moved(eg.H_LOW),
-  //the max value the trackbar can move (eg. H_HIGH), 
-  //and the function that is called whenever the trackbar is moved(eg. on_trackbar)
-  createTrackbar( "H_MIN", trackbarWindowName, &H_MIN, H_MAX, on_trackbar );
-  createTrackbar( "H_MAX", trackbarWindowName, &H_MAX, H_MAX, on_trackbar );
-  createTrackbar( "S_MIN", trackbarWindowName, &S_MIN, S_MAX, on_trackbar );
-  createTrackbar( "S_MAX", trackbarWindowName, &S_MAX, S_MAX, on_trackbar );
-  createTrackbar( "V_MIN", trackbarWindowName, &V_MIN, V_MAX, on_trackbar );
-  createTrackbar( "V_MAX", trackbarWindowName, &V_MAX, V_MAX, on_trackbar );
+	//create trackbars and insert them into window
+	//3 parameters are: the address of the variable that is changing when the trackbar is moved(eg.H_LOW),
+	//the max value the trackbar can move (eg. H_HIGH), 
+	//and the function that is called whenever the trackbar is moved(eg. on_trackbar)
+	createTrackbar( "H_MIN", trackbarWindowName, &H_MIN, H_MAX, on_trackbar );
+	createTrackbar( "H_MAX", trackbarWindowName, &H_MAX, H_MAX, on_trackbar );
+	createTrackbar( "S_MIN", trackbarWindowName, &S_MIN, S_MAX, on_trackbar );
+	createTrackbar( "S_MAX", trackbarWindowName, &S_MAX, S_MAX, on_trackbar );
+	createTrackbar( "V_MIN", trackbarWindowName, &V_MIN, V_MAX, on_trackbar );
+	createTrackbar( "V_MAX", trackbarWindowName, &V_MAX, V_MAX, on_trackbar );
 }
 
 //Converts from image coordinates to field coordinates
@@ -120,9 +152,9 @@ Point convertCoordinates(Point imageCoordinates) {
 
 // Places a small circle on the object
 void drawObject(int x,int y,Mat &frame) {
-  circle(frame,cv::Point(x,y),10,cv::Scalar(0,0,255));
-  putText(frame,intToString(x)+ " , " + intToString(y),
-          Point(x,y+20),1,1,Scalar(0,255,0));
+	circle(frame,cv::Point(x,y),10,cv::Scalar(0,0,255));
+	putText(frame,intToString(x)+ " , " + intToString(y),
+	        Point(x,y+20),1,1,Scalar(0,255,0));
 }
 
 void drawBall(Ball soccerBall, Mat &frame) {
@@ -175,7 +207,7 @@ void morphOps(Mat &thresh) {
 
   erode(thresh,thresh,erodeElement);
   dilate(thresh,thresh,dilateElement);
-  
+
   erodeElement = getStructuringElement( MORPH_RECT,Size(3,3));
   //dilate with larger element so make sure object is nicely visible
   dilateElement = getStructuringElement( MORPH_RECT,Size(6,6));
@@ -244,13 +276,13 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
     else {
       intAngle = 360-intAngle;
     }
-    
+
     // Correct angle to the Robot's X-axis
     if (intAngle > 90) {
       intAngle = intAngle - 90;
     }
     else {
-      intAngle = 270 + intAngle;
+      intAngle = 360 - intAngle;
     }
 
 
@@ -297,21 +329,21 @@ void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
   //use moments method to find our filtered object
   //double refArea = 0;
   bool objectFound = false;
-  
+
   if (contours.size() > 0) {
     int numObjects = hierarchy.size();
     //if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
     if(numObjects<MAX_NUM_OBJECTS){
-    
+
       // Iterate over all contours to find the largest
-      for (int i = 0; i < contours.size(); i++) {
+      for (unsigned i = 0; i < contours.size(); i++) {
         double tempArea = contourArea(contours[i], false); // Find area of each contour
         if (tempArea > largest_area) {
           largest_area = tempArea;
           largest_contour_index = i;
         }
       }
-      
+
       Moments moment = moments((Mat)contours[largest_contour_index]);
 
       //if the area is less than 20 px by 20px then it is probably just noise
@@ -326,19 +358,19 @@ void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
           ball.set_x_pos(fieldPosition.x);
           ball.set_img_x(moment.m10/moment.m00);
         }
-        
+
         if (abs(ball.get_y_pos() - fieldPosition.y) > MIN_CHANGE) {
           ball.set_y_pos(fieldPosition.y);
           ball.set_img_y(moment.m01/moment.m00);
         }
 
         objectFound = true;
-        
+
       }
       else {
         objectFound = false;
       }
-   
+
       //let user know you found an object
       if(objectFound == true){
         //draw object location on screen
@@ -351,7 +383,6 @@ void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
     }
   }
 }
-
 
 // Generate prompts to calibrate colors for the Home1 robots
 void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
@@ -382,6 +413,7 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
    while (1) {
       //store image to matrix
       capture.read(cameraFeed);
+      undistortImage(cameraFeed);
 
       //convert frame from BGR to HSV colorspace
       field_origin_x = field_center_x - (field_width/2);
@@ -424,7 +456,7 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
           Home1.setHSVmin(hsv_min);
           Home1.setHSVmax(hsv_max);
 
-          printf("\n\n Robot Home1 HSV Values Saved!\n");
+          printf("\n\nRobot Home1 HSV Values Saved!\n");
           printf("h_min: %d\n", h_min);
           printf("h_max: %d\n", h_max);
           printf("s_min: %d\n", s_min);
@@ -478,6 +510,7 @@ void calibrateBall(VideoCapture capture, Ball &ball) {
    while (1) {
     //store image to matrix
     capture.read(cameraFeed);
+    undistortImage(cameraFeed);
 
     //convert frame from BGR to HSV colorspace
     field_origin_x = field_center_x - (field_width/2);
@@ -549,13 +582,13 @@ void calibrateField(VideoCapture capture) {
   Mat cameraFeed;
   int field_origin_x;
   int field_origin_y;
-  
+
   // Set Initial Field Values
-  field_center_x = 320;
-  field_center_y = 240;
-  field_width = 639;
-  field_height = 479;
-  
+  field_center_x = 623;
+  field_center_y = 356;
+  field_width = 828;
+  field_height = 562;
+
   //create window for trackbars
   namedWindow(trackbarWindowName,0);
 
@@ -577,6 +610,8 @@ void calibrateField(VideoCapture capture) {
   // Wait forever until user sets the values
   while (1) {
     capture.read(cameraFeed);
+    undistortImage(cameraFeed);
+
     // Wait for user to set values
     field_center_y = getTrackbarPos( "Field Center Y", trackbarWindowName);
     field_center_x = getTrackbarPos( "Field Center X", trackbarWindowName);
@@ -617,26 +652,30 @@ void runFullCalibration(VideoCapture capture, Ball &ball, Robot &Home1) {
 }
 
 int main(int argc, char* argv[]) {
-  //if we would like to calibrate our filter values, set to true.
-  bool calibrationMode = true;
+	//if we would like to calibrate our filter values, set to true.
+	bool calibrationMode = true;
 
   int field_origin_x;
   int field_origin_y;
 
-  //Matrix to store each frame of the webcam feed
-  Mat cameraFeed;
-  Mat threshold;
-  Mat HSV;
+	//Matrix to store each frame of the webcam feed
+	Mat cameraFeed;
+	Mat threshold1; //threshold image of ball
+	Mat threshold2; //threshold image of robot
+	Mat threshold; //combined image
+	Mat HSV;
+	Mat bw; // black and white mat
+  Mat BGR;// BGR mat
 
-  //video capture object to acquire webcam feed
-  //const string videoStreamAddress = "http://192.168.1.126:8080/?action=stream?dummy=param.mjpg";
-  VideoCapture capture;
+	//video capture object to acquire webcam feed
+	const string videoStreamAddress = "http://192.168.1.90/mjpg/video.mjpg";
+	VideoCapture capture;
 
-  capture.open(0); //set to 0 to use the webcam
+  capture.open(videoStreamAddress); //set to 0 to use the webcam
 
-  //set height and width of capture frame
-  capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
-  capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
+	//set height and width of capture frame
+	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
+	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
 
   // When NOT in calibration mode, use actual hard-coded color values
   Robot home1(HOME), home2(HOME);
@@ -647,7 +686,7 @@ int main(int argc, char* argv[]) {
     // Calibrate the camera first
     runFullCalibration(capture, ball, home1);
   }
-
+  
   /***********************Ros Publisher************************************/
 
   ros::init(argc, argv, "computer_vision");
@@ -657,11 +696,13 @@ int main(int argc, char* argv[]) {
 
   /************************************************************************/
 
-  //start an infinite loop where webcam feed is copied to cameraFeed matrix
-  //all of our operations will be performed within this loop
+  /************************************************************************/
+	//start an infinite loop where webcam feed is copied to cameraFeed matrix
+	//all of our operations will be performed within this loop
   while(ros::ok()) {
     //store image to matrix
     capture.read(cameraFeed);
+    undistortImage(cameraFeed);
 
     //convert frame from BGR to HSV colorspace
     field_origin_x = field_center_x - (field_width/2);
@@ -709,11 +750,11 @@ int main(int argc, char* argv[]) {
 
     /************************************************************************/
 
-    //delay 30ms so that screen can refresh.
-    //image will not appear without this waitKey() command
-    waitKey(50);
-  }
-  return 0;
-}
 
+		//delay 30ms so that screen can refresh.
+		//image will not appear without this waitKey() command
+		waitKey(50);
+	}
+	return 0;
+}
 
