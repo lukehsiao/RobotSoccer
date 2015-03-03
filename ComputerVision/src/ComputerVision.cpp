@@ -23,6 +23,10 @@
 #define MIN_CHANGE 5
 #define MAX_CHANGE 1000
 
+//default capture width and height
+#define FRAME_WIDTH  1280
+#define FRAME_HEIGHT 720
+
 // Constants for determining field coordinate systems
 //#define FIELD_WIDTH 640// 790
 //#define FIELD_HEIGHT 400
@@ -51,14 +55,12 @@ int field_height_min = 0;
 int field_width_min = 0;
 int field_center_x_min = 0;
 int field_center_y_min = 0;
-int field_height_max = 600;
-int field_width_max = 900;
-int field_center_x_max = 500;
-int field_center_y_max = 500;
+int field_height_max = FRAME_HEIGHT;
+int field_width_max = FRAME_WIDTH;
+int field_center_x_max = FRAME_WIDTH;
+int field_center_y_max = FRAME_HEIGHT;
 
-//default capture width and height
-const int FRAME_WIDTH = 1024;
-const int FRAME_HEIGHT = 768;
+
 
 //max number of objects to be detected in frame
 const int MAX_NUM_OBJECTS=50;
@@ -354,7 +356,6 @@ void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
   }
 }
 
-
 // Generate prompts to calibrate colors for the Home1 robots
 void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
   Mat cameraFeed;
@@ -426,7 +427,7 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
           Home1.setHSVmin(hsv_min);
           Home1.setHSVmax(hsv_max);
 
-          printf("\n\n Robot Home1 HSV Values Saved!\n");
+          printf("\n\nRobot Home1 HSV Values Saved!\n");
           printf("h_min: %d\n", h_min);
           printf("h_max: %d\n", h_max);
           printf("s_min: %d\n", s_min);
@@ -553,10 +554,10 @@ void calibrateField(VideoCapture capture) {
   int field_origin_y;
 
   // Set Initial Field Values
-  field_center_x = 320;
-  field_center_y = 240;
-  field_width = 639;
-  field_height = 479;
+  field_center_x = 734;
+  field_center_y = 360;
+  field_width = 913;
+  field_height = 695;
 
   //create window for trackbars
   namedWindow(trackbarWindowName,0);
@@ -647,9 +648,9 @@ Mat OR(Mat mat1, Mat mat2){
   }
   cvtColor(mat3_bw,mat3_BGR,COLOR_GRAY2BGR);
   cvtColor(mat3_BGR,mat3_HSV,COLOR_BGR2HSV);
+  printf("\n\nYES!!!\n");
   return mat3_HSV;
 }
-
 
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
@@ -668,15 +669,14 @@ int main(int argc, char* argv[]) {
   Mat BGR;// BGR mat
 
 	//video capture object to acquire webcam feed
-	const string videoStreamAddress = "http://192.168.1.126:8080/?action=stream?dummy=param.mjpg";
+	const string videoStreamAddress = "http://192.168.1.90/mjpg/video.mjpg";
 	VideoCapture capture;
 
-	capture.open(0); //set to 0 to use the webcam
+  capture.open(videoStreamAddress); //set to 0 to use the webcam
 
 	//set height and width of capture frame
 	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
-
 
   // When NOT in calibration mode, use actual hard-coded color values
   Robot home1(HOME), home2(HOME);
@@ -692,36 +692,64 @@ int main(int argc, char* argv[]) {
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
 	while(1) {
-		//store image to matrix
-		capture.read(cameraFeed);
+	  //TODO (Clover) There are bugs in your code that we'll need to fix later.
+//		//store image to matrix
+//		capture.read(cameraFeed);
+//
+//		//convert frame from BGR to HSV colorspace
+//		field_origin_x = field_center_x - (field_width/2);
+//		field_origin_y = field_center_y - (field_height/2);
+//    Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
+//    cameraFeed = cameraFeed(myROI);
+//
+//		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
+//
+//    inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold1);
+//
+//    // Erode, then dialate to get a cleaner image
+//    morphOps(threshold1);
+//    trackFilteredBall(ball,threshold1,HSV,cameraFeed);
+//
+//    inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold2);
+//    // Erode, then dialate to get a cleaner image
+//    morphOps(threshold2);
+//    trackFilteredRobot(home1,threshold2,HSV,cameraFeed);
+//
+//    // Display the filtered robot/ball images
+//    //threshold=OR(threshold2,threshold2);
+//
+//    // Show Field Outline
+//    Rect fieldOutline(0, 0, field_width-1, field_height-1);
+//    rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
+//		imshow(windowName,cameraFeed);
+//    imshow(windowName2,threshold);
 
-		//convert frame from BGR to HSV colorspace
-		field_origin_x = field_center_x - (field_width/2);
-		field_origin_y = field_center_y - (field_height/2);
+    //store image to matrix
+    capture.read(cameraFeed);
+
+    //convert frame from BGR to HSV colorspace
+    field_origin_x = field_center_x - (field_width/2);
+    field_origin_y = field_center_y - (field_height/2);
     Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
     cameraFeed = cameraFeed(myROI);
 
-		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
+    cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
-    inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold1);
-
+    inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
     // Erode, then dialate to get a cleaner image
-    morphOps(threshold1);
-    trackFilteredBall(ball,threshold1,HSV,cameraFeed);
+    morphOps(threshold);
+    trackFilteredBall(ball,threshold,HSV,cameraFeed);
 
-    inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold2);
+    inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
     // Erode, then dialate to get a cleaner image
-    morphOps(threshold2);
-    trackFilteredRobot(home1,threshold2,HSV,cameraFeed);
+    morphOps(threshold);
+    trackFilteredRobot(home1,threshold,HSV,cameraFeed);
 
-//    // Display the filtered robot/ball images
-    threshold=OR(threshold2,threshold2);
 
     // Show Field Outline
-    Rect fieldOutline(0, 0, field_width-1, field_height-1);
+    Rect fieldOutline(0, 0, field_width, field_height);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
-		imshow(windowName,cameraFeed);
-    imshow(windowName2,threshold);
+    imshow(windowName,cameraFeed);
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
