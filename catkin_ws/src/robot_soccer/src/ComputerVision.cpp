@@ -81,17 +81,18 @@ const string windowName3 = "After Morphological Operations";
 const string trackbarWindowName = "Trackbars";
 
 // Camera Calibration Data
-float dist_coeff[5][1] = {  {-2.0698033501549058},
-                            {9.6448611626711713},
-                            {0.0},
-                            {0.0},
-                            {-20.765851606846589}
-                         };
+double dist_coeff[5][1] = {  {-0.43},
+                             {0.23},
+                             {-0.004},
+                             {-0.005},
+                             {-0.07}
+                           };
 
-float cam_matrix[3][3] = {  {1514.8407346906349,0.0,639.5},
-                            {0.0,1514.8407346906349,359.5},
-                            {0.0,0.0,1.0}
-                         };
+
+double cam_matrix[3][3] = {  {846,  0.0,  639.5},
+                             {0.0,  849,  436.0},
+                             {0.0,  0.0,  1.0}
+                          };
 
 // This function is called whenever a trackbar changes
 void on_trackbar( int, void* ) {
@@ -107,13 +108,26 @@ string intToString(int number) {
 // Runs the undistortion
 void undistortImage(Mat &source) {
   // Setup Distortion matrices
-  Mat cameraMatrix = Mat(3, 3, CV_32FC1, &cam_matrix);
-  Mat distCoeffs = Mat(5, 1, CV_32FC1, &dist_coeff);
+  Mat cameraMatrix = Mat(3, 3, CV_64F, cam_matrix); // read in 64-bit doubles
+  Mat distCoeffs = Mat(5, 1, CV_64F, dist_coeff);
 
+  double y_shift = 70;
+  int enlargement = 100;
   Size imageSize = source.size();
+  imageSize.height += enlargement;
   Mat temp = source.clone();
-  undistort(temp, source, cameraMatrix, distCoeffs,
-                  getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0));
+
+  Mat newCameraMatrix = cameraMatrix.clone();
+
+  // Adjust the position of the newCameraMatrix
+  // at() is a templated function so <double> is necessary
+  newCameraMatrix.at<double>(1,2) += y_shift; //shift the image down
+
+  Mat map1;
+  Mat map2;
+  initUndistortRectifyMap(cameraMatrix, distCoeffs, Mat(), newCameraMatrix, imageSize, CV_16SC2, map1, map2);
+
+  remap(temp, source, map1, map2, INTER_LINEAR);
 }
 
 void createHSVTrackbars() {
@@ -584,10 +598,10 @@ void calibrateField(VideoCapture capture) {
   int field_origin_y;
 
   // Set Initial Field Values
-  field_center_x = 623;
-  field_center_y = 356;
-  field_width = 828;
-  field_height = 562;
+  field_center_x = 590;
+  field_center_y = 410;
+  field_width = 1074;
+  field_height = 780;
 
   //create window for trackbars
   namedWindow(trackbarWindowName,0);
