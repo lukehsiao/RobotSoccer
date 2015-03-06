@@ -76,18 +76,26 @@ const string windowName2 = "Thresholded Image";
 const string windowName3 = "After Morphological Operations";
 const string trackbarWindowName = "Trackbars";
 
-// Camera Calibration Data
-float dist_coeff[5][1] = {  {-2.0698033501549058},
-                            {9.6448611626711713},
-                            {0.0},
-                            {0.0},
-                            {-20.765851606846589}
-                         };
+//// Camera Calibration Data
+//double dist_coeff[5][1] = {  {-2.0698033501549058},
+//                            {9.6448611626711713},
+//                            {0.0},
+//                            {0.0},
+//                            {-20.765851606846589}
+//                         };
 
-float cam_matrix[3][3] = {  {1514.8407346906349,0.0,639.5},
-                            {0.0,1514.8407346906349,359.5},
-                            {0.0,0.0,1.0}
-                         };
+double dist_coeff[5][1] = {  {-0.43},
+                             {0.23},
+                             {-0.004},
+                             {0.0},
+                             {-0.07}
+                           };
+
+
+double cam_matrix[3][3] = {  {846,  0.0,  639.5},
+                             {0.0,  849,  436.0},
+                             {0.0,  0.0,  1.0}
+                          };
 
 // This function is called whenever a trackbar changes
 void on_trackbar( int, void* ) {
@@ -103,13 +111,28 @@ string intToString(int number) {
 // Runs the undistortion
 void undistortImage(Mat &source) {
   // Setup Distortion matrices
-  Mat cameraMatrix = Mat(3, 3, CV_32FC1, &cam_matrix);
-  Mat distCoeffs = Mat(5, 1, CV_32FC1, &dist_coeff);
+  Mat cameraMatrix = Mat(3, 3, CV_64F, cam_matrix); // read in 64-bit doubles
+  Mat distCoeffs = Mat(5, 1, CV_64F, dist_coeff);
 
+  double y_shift = 70;
+  int enlargement = 100;
   Size imageSize = source.size();
+  imageSize.height += enlargement;
   Mat temp = source.clone();
-  undistort(temp, source, cameraMatrix, distCoeffs,
-                  getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize, 0));
+
+  Mat newCameraMatrix = cameraMatrix.clone();
+
+  // Adjust the position of the newCameraMatrix
+  // at() is a templated function so <double> is necessary
+  newCameraMatrix.at<double>(1,2) += y_shift; //shift the image down
+
+  Mat map1;
+  Mat map2;
+  initUndistortRectifyMap(cameraMatrix, distCoeffs, Mat(), newCameraMatrix, imageSize, CV_16SC2, map1, map2);
+
+  remap(temp, source, map1, map2, INTER_LINEAR);
+
+
 }
 
 void createHSVTrackbars() {
@@ -718,6 +741,8 @@ int main(int argc, char* argv[]) {
     runFullCalibration(capture, ball, home1, home2, away1, away2);
   }
 
+  namedWindow(windowName,WINDOW_NORMAL);
+
   /************************************************************************/
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
@@ -788,6 +813,7 @@ int main(int argc, char* argv[]) {
     // Show Field Outline
     Rect fieldOutline(0, 0, field_width, field_height);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
+    //create window for trackbars
     imshow(windowName,cameraFeed);
 
 		//delay 30ms so that screen can refresh.
