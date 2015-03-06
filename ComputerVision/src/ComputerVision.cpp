@@ -57,8 +57,8 @@ int field_height_min = 0;
 int field_width_min = 0;
 int field_center_x_min = 0;
 int field_center_y_min = 0;
-int field_height_max = FRAME_HEIGHT;
-int field_width_max = FRAME_WIDTH;
+int field_height_max = FRAME_HEIGHT + 100;
+int field_width_max = FRAME_WIDTH + 100;
 int field_center_x_max = FRAME_WIDTH;
 int field_center_y_max = FRAME_HEIGHT;
 
@@ -76,18 +76,11 @@ const string windowName2 = "Thresholded Image";
 const string windowName3 = "After Morphological Operations";
 const string trackbarWindowName = "Trackbars";
 
-//// Camera Calibration Data
-//double dist_coeff[5][1] = {  {-2.0698033501549058},
-//                            {9.6448611626711713},
-//                            {0.0},
-//                            {0.0},
-//                            {-20.765851606846589}
-//                         };
-
+// Camera Calibration Data
 double dist_coeff[5][1] = {  {-0.43},
                              {0.23},
                              {-0.004},
-                             {0.0},
+                             {-0.005},
                              {-0.07}
                            };
 
@@ -131,8 +124,6 @@ void undistortImage(Mat &source) {
   initUndistortRectifyMap(cameraMatrix, distCoeffs, Mat(), newCameraMatrix, imageSize, CV_16SC2, map1, map2);
 
   remap(temp, source, map1, map2, INTER_LINEAR);
-
-
 }
 
 void createHSVTrackbars() {
@@ -603,10 +594,10 @@ void calibrateField(VideoCapture capture) {
   int field_origin_y;
 
   // Set Initial Field Values
-  field_center_x = 623;
-  field_center_y = 356;
-  field_width = 828;
-  field_height = 562;
+  field_center_x = 590;
+  field_center_y = 410;
+  field_width = 1074;
+  field_height = 780;
 
   //create window for trackbars
   namedWindow(trackbarWindowName,0);
