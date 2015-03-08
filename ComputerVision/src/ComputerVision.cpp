@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <stdio.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -20,6 +21,11 @@
 #include "Ball.h"
 #include "Robot.h"
 #include "Object.h"
+
+typedef struct {
+  unsigned int sec;
+  unsigned int nsec;
+} Time;
 
 #define PI 3.14159265
 #define MIN_CHANGE 5
@@ -695,6 +701,61 @@ Mat OR(Mat mat1, Mat mat2){
   return mat3_HSV;
 }
 
+Time getNextImage(std::ifstream & myFile, std::vector<char> & imageArray) {
+  imageArray.clear();
+  char buffer[4];
+  Time timestamp;
+  bool foundImage = false;
+  while(!foundImage){
+    myFile.read(buffer,1);
+    if((*buffer) == (char)0xFF){
+      myFile.read(buffer,1);
+      if((*buffer) == (char)0xD8){
+        //printf("found start of image \n");
+        imageArray.push_back((char)0xFF);
+        imageArray.push_back((char)0xD8);
+        while(1){
+          myFile.read(buffer,1);
+          imageArray.push_back(*buffer);
+          if((*buffer) == (char)0xFF){
+            myFile.read(buffer,1);
+            imageArray.push_back(*buffer);
+            if((*buffer) == (char)0xFE){
+              myFile.read(buffer,4);
+              imageArray.push_back(*buffer);
+              imageArray.push_back(*(buffer+1));
+              imageArray.push_back(*(buffer+2));
+              imageArray.push_back(*(buffer+3));
+              if((*(buffer+3)) == (char)0x01) {
+                myFile.read(buffer,4);
+                unsigned int sec = 0;
+                for(int i = 0; i < 4; i++){
+                  imageArray.push_back(*(buffer + i));
+                  sec <<= 8;
+                  sec += *(unsigned char*)(void*)(buffer+i);
+                }
+
+                myFile.read(buffer,1);
+                unsigned int hundreds = 0;
+                imageArray.push_back(*buffer);
+                hundreds += *(unsigned char*)(void*)buffer;
+                timestamp.sec = sec;
+                timestamp.nsec = hundreds * 10000000;
+              }
+
+
+            }else if((*buffer) == (char)0xD9){
+              //printf("found end of image\n");
+              foundImage = true;
+              return timestamp;
+            }
+          }
+        }
+      }
+    }
+  }
+  return Time{0,0};
+}
 
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
@@ -714,6 +775,7 @@ int main(int argc, char* argv[]) {
 
 	//video capture object to acquire webcam feed
 	const string videoStreamAddress = "http://192.168.1.90/mjpg/video.mjpg";
+
 	VideoCapture capture;
 
   capture.open(videoStreamAddress); //set to 0 to use the webcam
@@ -737,6 +799,10 @@ int main(int argc, char* argv[]) {
   /************************************************************************/
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
+  capture.release();
+  system("curl -s http://192.168.1.90/mjpg/video.mjpg > imagefifo &");
+  std::ifstream myFile ("imagefifo",std::ifstream::binary);
+  std::vector<char> imageArray;
 	while(1) {
 	  //TODO (Clover) There are bugs in your code that we'll need to fix later.
 //		//store image to matrix
@@ -771,7 +837,10 @@ int main(int argc, char* argv[]) {
 //    imshow(windowName2,threshold);
 
     //store image to matrix
-    capture.read(cameraFeed);
+    //capture.read(cameraFeed);
+	  Time timestamp = getNextImage(myFile,imageArray);
+	  //printf("%u.%09u\n",timestamp.sec,timestamp.nsec);
+	  cameraFeed = imdecode(imageArray,CV_LOAD_IMAGE_COLOR);
     undistortImage(cameraFeed);
 
     //convert frame from BGR to HSV colorspace
