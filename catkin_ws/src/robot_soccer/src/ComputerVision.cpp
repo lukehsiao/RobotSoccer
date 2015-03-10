@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <stdio.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -61,8 +62,8 @@ int field_height_min = 0;
 int field_width_min = 0;
 int field_center_x_min = 0;
 int field_center_y_min = 0;
-int field_height_max = FRAME_HEIGHT;
-int field_width_max = FRAME_WIDTH;
+int field_height_max = FRAME_HEIGHT + 100;
+int field_width_max = FRAME_WIDTH + 100;
 int field_center_x_max = FRAME_WIDTH;
 int field_center_y_max = FRAME_HEIGHT;
 
@@ -399,7 +400,7 @@ void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
 }
 
 // Generate prompts to calibrate colors for the Home1 robots
-void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
+void calibrateRobot(VideoCapture capture, Robot &robot) {
   Mat cameraFeed;
   Mat HSV;
   Mat threshold;
@@ -452,10 +453,10 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
       Scalar hsv_min(h_min, s_min, v_min);
       Scalar hsv_max(h_max, s_max, v_max);
 
-      Home1.setHSVmin(hsv_min);
-      Home1.setHSVmax(hsv_max);
+      robot.setHSVmin(hsv_min);
+      robot.setHSVmax(hsv_max);
 
-      trackFilteredRobot(Home1,threshold,HSV,cameraFeed);
+      trackFilteredRobot(robot,threshold,HSV,cameraFeed);
 
       imshow(windowName2,threshold);
       imshow(windowName,cameraFeed);
@@ -467,10 +468,10 @@ void calibrateRobot_Home1(VideoCapture capture, Robot &Home1) {
           Scalar hsv_min(h_min, s_min, v_min);
           Scalar hsv_max(h_max, s_max, v_max);
 
-          Home1.setHSVmin(hsv_min);
-          Home1.setHSVmax(hsv_max);
+          robot.setHSVmin(hsv_min);
+          robot.setHSVmax(hsv_max);
 
-          printf("\n\nRobot Home1 HSV Values Saved!\n");
+          printf("\n\nRobot HSV Values Saved!\n");
           printf("h_min: %d\n", h_min);
           printf("h_max: %d\n", h_max);
           printf("s_min: %d\n", s_min);
@@ -659,10 +660,100 @@ void calibrateField(VideoCapture capture) {
 }
 
 // Generates all the calibration prompts (field + ball + robots)
-void runFullCalibration(VideoCapture capture, Ball &ball, Robot &Home1) {
+void runFullCalibration(VideoCapture capture, Ball &ball, Robot &Home1, Robot &Home2, Robot &Away1, Robot &Away2) {
   calibrateField(capture);
   calibrateBall(capture, ball);
-  calibrateRobot_Home1(capture, Home1);
+  calibrateRobot(capture, Home1);
+  calibrateRobot(capture, Away1);
+}
+
+Mat OR(Mat mat1, Mat mat2){
+  Mat BGR_ball; //BGR image of ball;
+  Mat BGR_robot; //BGR image of robot;
+  Mat bw_ball; //Black and white image of ball
+  Mat bw_robot;
+  Mat mat3_bw;
+  Mat mat3_BGR;
+  Mat mat3_HSV;
+
+  cvtColor(mat1,BGR_ball,COLOR_HSV2BGR);
+  cvtColor(BGR_ball,bw_ball,COLOR_BGR2GRAY);
+  cvtColor(mat2,BGR_robot,COLOR_HSV2BGR);
+  cvtColor(BGR_robot,bw_robot,COLOR_BGR2GRAY);
+  mat3_bw=bw_ball;
+
+  int col=mat1.cols;
+  int row=mat1.rows;
+
+  for (int i=0; i<col; i++)
+  {
+    for (int j=0; j<row; j++)
+    {
+      mat3_bw.at<uchar>(i,j)=bw_ball.at<uchar>(i,j)+bw_robot.at<uchar>(i,j);  //assume white=255,black=0;
+      if (mat3_bw.at<uchar>(i,j)>255)                     //b+b=0=b; w+b=255=w; w+w=510,over!
+        mat3_bw.at<uchar>(i,j)=255;
+    }// not sure is 'MAT(i,j)' the right way to
+  }
+  cvtColor(mat3_bw,mat3_BGR,COLOR_GRAY2BGR);
+  cvtColor(mat3_BGR,mat3_HSV,COLOR_BGR2HSV);
+  printf("\n\nYES!!!\n");
+  return mat3_HSV;
+}
+
+ros::Time getNextImage(std::ifstream & myFile, std::vector<char> & imageArray) {
+  imageArray.clear();
+  char buffer[4];
+  ros::Time timestamp;
+  bool foundImage = false;
+  while(!foundImage){
+    myFile.read(buffer,1);
+    if((*buffer) == (char)0xFF){
+      myFile.read(buffer,1);
+      if((*buffer) == (char)0xD8){
+        //printf("found start of image \n");
+        imageArray.push_back((char)0xFF);
+        imageArray.push_back((char)0xD8);
+        while(1){
+          myFile.read(buffer,1);
+          imageArray.push_back(*buffer);
+          if((*buffer) == (char)0xFF){
+            myFile.read(buffer,1);
+            imageArray.push_back(*buffer);
+            if((*buffer) == (char)0xFE){
+              myFile.read(buffer,4);
+              imageArray.push_back(*buffer);
+              imageArray.push_back(*(buffer+1));
+              imageArray.push_back(*(buffer+2));
+              imageArray.push_back(*(buffer+3));
+              if((*(buffer+3)) == (char)0x01) {
+                myFile.read(buffer,4);
+                unsigned int sec = 0;
+                for(int i = 0; i < 4; i++){
+                  imageArray.push_back(*(buffer + i));
+                  sec <<= 8;
+                  sec += *(unsigned char*)(void*)(buffer+i);
+                }
+
+                myFile.read(buffer,1);
+                unsigned int hundreds = 0;
+                imageArray.push_back(*buffer);
+                hundreds += *(unsigned char*)(void*)buffer;
+                timestamp.sec = sec;
+                timestamp.nsec = hundreds * 10000000;
+              }
+
+
+            }else if((*buffer) == (char)0xD9){
+              //printf("found end of image\n");
+              foundImage = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+  return timestamp;
 }
 
 int main(int argc, char* argv[]) {
@@ -683,6 +774,7 @@ int main(int argc, char* argv[]) {
 
 	//video capture object to acquire webcam feed
 	const string videoStreamAddress = "http://192.168.1.90/mjpg/video.mjpg";
+
 	VideoCapture capture;
 
   capture.open(videoStreamAddress); //set to 0 to use the webcam
@@ -698,24 +790,66 @@ int main(int argc, char* argv[]) {
 
   if (calibrationMode == true) {
     // Calibrate the camera first
-    runFullCalibration(capture, ball, home1);
+    runFullCalibration(capture, ball, home1, home2, away1, away2);
   }
-  
-  /***********************Ros Publisher************************************/
+
+  namedWindow(windowName,WINDOW_NORMAL);
+
+    /***********************Ros Publisher************************************/
 
   ros::init(argc, argv, "computer_vision");
   ros::NodeHandle n;
   ros::Publisher publisher = n.advertise<robot_soccer::locations>("locTopic", 1000);
-  ros::Rate loop_rate(10);
+  ros::Rate loop_rate(20);
 
   /************************************************************************/
 
+  
   /************************************************************************/
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
-  while(ros::ok()) {
+  capture.release();
+  system("curl -s http://192.168.1.90/mjpg/video.mjpg > imagefifo &");
+  std::ifstream myFile ("imagefifo",std::ifstream::binary);
+  std::vector<char> imageArray;
+	while(ros::ok()) {
+	  //TODO (Clover) There are bugs in your code that we'll need to fix later.
+//		//store image to matrix
+//		capture.read(cameraFeed);
+//
+//		//convert frame from BGR to HSV colorspace
+//		field_origin_x = field_center_x - (field_width/2);
+//		field_origin_y = field_center_y - (field_height/2);
+//    Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
+//    cameraFeed = cameraFeed(myROI);
+//
+//		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
+//
+//    inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold1);
+//
+//    // Erode, then dialate to get a cleaner image
+//    morphOps(threshold1);
+//    trackFilteredBall(ball,threshold1,HSV,cameraFeed);
+//
+//    inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold2);
+//    // Erode, then dialate to get a cleaner image
+//    morphOps(threshold2);
+//    trackFilteredRobot(home1,threshold2,HSV,cameraFeed);
+//
+//    // Display the filtered robot/ball images
+//    //threshold=OR(threshold2,threshold2);
+//
+//    // Show Field Outline
+//    Rect fieldOutline(0, 0, field_width-1, field_height-1);
+//    rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
+//		imshow(windowName,cameraFeed);
+//    imshow(windowName2,threshold);
+
     //store image to matrix
-    capture.read(cameraFeed);
+    //capture.read(cameraFeed);
+	  ros::Time timestamp = getNextImage(myFile,imageArray);
+	  //printf("%u.%09u\n",timestamp.sec,timestamp.nsec);
+	  cameraFeed = imdecode(imageArray,CV_LOAD_IMAGE_COLOR);
     undistortImage(cameraFeed);
 
     //convert frame from BGR to HSV colorspace
@@ -726,23 +860,32 @@ int main(int argc, char* argv[]) {
 
     cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
+    // Track Ball
     inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
     // Erode, then dialate to get a cleaner image
     morphOps(threshold);
     trackFilteredBall(ball,threshold,HSV,cameraFeed);
 
+    // Track Home 1
     inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
     // Erode, then dialate to get a cleaner image
     morphOps(threshold);
     trackFilteredRobot(home1,threshold,HSV,cameraFeed);
 
+    // Track Away 1
+    inRange(HSV,away1.getHSVmin(),away1.getHSVmax(),threshold);
+    // Erode, then dialate to get a cleaner image
+    morphOps(threshold);
+    trackFilteredRobot(away1,threshold,HSV,cameraFeed);
+
 
     // Show Field Outline
     Rect fieldOutline(0, 0, field_width, field_height);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
+    //create window for trackbars
     imshow(windowName,cameraFeed);
     
-    /***********************Ros Publisher************************************/
+        /***********************Ros Publisher************************************/
 
     // Create message object
     robot_soccer::locations coordinates;
@@ -752,10 +895,13 @@ int main(int argc, char* argv[]) {
     coordinates.home1_x = home1.get_x_pos();
     coordinates.home1_y = home1.get_y_pos();
     coordinates.home1_theta = home1.getAngle();
-    coordinates.header.stamp = ros::Time::now();
+    coordinates.away1_x = away1.get_x_pos();
+    coordinates.away1_y = away1.get_y_pos();
+    coordinates.away1_theta = away1.getAngle();    
+    coordinates.header.stamp = timestamp;
     // Print values to ROS console
-    ROS_INFO("\n\nx %d\ny %d\ntheta %d\n", coordinates.home1_x, coordinates.home1_y, coordinates.home1_theta);
-    ROS_INFO("Ball_x: %d\nBall_y: %d\n", coordinates.ball_x, coordinates.ball_y);
+    ROS_INFO("\n  timestamp: %u.%09u\n  x %d\n  y %d\n  theta %d\n", coordinates.header.stamp.sec, coordinates.header.stamp.nsec, coordinates.home1_x, coordinates.home1_y, coordinates.home1_theta);
+    ROS_INFO("\n  Ball_x: %d\n  Ball_y: %d\n", coordinates.ball_x, coordinates.ball_y);
     // Publish message
     publisher.publish(coordinates);
     // Waits the necessary time between message publications to meet the
@@ -767,7 +913,7 @@ int main(int argc, char* argv[]) {
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
-		waitKey(50);
+		waitKey(1);
 	}
 	return 0;
 }
