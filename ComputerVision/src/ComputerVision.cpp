@@ -747,14 +747,14 @@ Time getNextImage(std::ifstream & myFile, std::vector<char> & imageArray) {
             }else if((*buffer) == (char)0xD9){
               //printf("found end of image\n");
               foundImage = true;
-              return timestamp;
+              break;
             }
           }
         }
       }
     }
   }
-  return Time{0,0};
+  return timestamp;
 }
 
 int main(int argc, char* argv[]) {
@@ -839,7 +839,7 @@ int main(int argc, char* argv[]) {
     //store image to matrix
     //capture.read(cameraFeed);
 	  Time timestamp = getNextImage(myFile,imageArray);
-	  //printf("%u.%09u\n",timestamp.sec,timestamp.nsec);
+	  printf("%u.%09u\n",timestamp.sec,timestamp.nsec);
 	  cameraFeed = imdecode(imageArray,CV_LOAD_IMAGE_COLOR);
     undistortImage(cameraFeed);
 
@@ -878,7 +878,7 @@ int main(int argc, char* argv[]) {
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
-		waitKey(50);
+		waitKey(1);
 	}
 	return 0;
 }
