@@ -293,11 +293,11 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
     }
 
     // Correct angle to the Robot's X-axis
-    if (intAngle > 90) {
+    if (intAngle >= 90) {
       intAngle = intAngle - 90;
     }
     else {
-      intAngle = 360 - intAngle;
+      intAngle = 270 + intAngle;
     }
 
 
@@ -667,39 +667,6 @@ void runFullCalibration(VideoCapture capture, Ball &ball, Robot &Home1, Robot &H
   calibrateRobot(capture, Away1);
 }
 
-Mat OR(Mat mat1, Mat mat2){
-  Mat BGR_ball; //BGR image of ball;
-  Mat BGR_robot; //BGR image of robot;
-  Mat bw_ball; //Black and white image of ball
-  Mat bw_robot;
-  Mat mat3_bw;
-  Mat mat3_BGR;
-  Mat mat3_HSV;
-
-  cvtColor(mat1,BGR_ball,COLOR_HSV2BGR);
-  cvtColor(BGR_ball,bw_ball,COLOR_BGR2GRAY);
-  cvtColor(mat2,BGR_robot,COLOR_HSV2BGR);
-  cvtColor(BGR_robot,bw_robot,COLOR_BGR2GRAY);
-  mat3_bw=bw_ball;
-
-  int col=mat1.cols;
-  int row=mat1.rows;
-
-  for (int i=0; i<col; i++)
-  {
-    for (int j=0; j<row; j++)
-    {
-      mat3_bw.at<uchar>(i,j)=bw_ball.at<uchar>(i,j)+bw_robot.at<uchar>(i,j);  //assume white=255,black=0;
-      if (mat3_bw.at<uchar>(i,j)>255)                     //b+b=0=b; w+b=255=w; w+w=510,over!
-        mat3_bw.at<uchar>(i,j)=255;
-    }// not sure is 'MAT(i,j)' the right way to
-  }
-  cvtColor(mat3_bw,mat3_BGR,COLOR_GRAY2BGR);
-  cvtColor(mat3_BGR,mat3_HSV,COLOR_BGR2HSV);
-  printf("\n\nYES!!!\n");
-  return mat3_HSV;
-}
-
 ros::Time getNextImage(std::ifstream & myFile, std::vector<char> & imageArray) {
   imageArray.clear();
   char buffer[4];
@@ -813,37 +780,6 @@ int main(int argc, char* argv[]) {
   std::ifstream myFile ("imagefifo",std::ifstream::binary);
   std::vector<char> imageArray;
 	while(ros::ok()) {
-	  //TODO (Clover) There are bugs in your code that we'll need to fix later.
-//		//store image to matrix
-//		capture.read(cameraFeed);
-//
-//		//convert frame from BGR to HSV colorspace
-//		field_origin_x = field_center_x - (field_width/2);
-//		field_origin_y = field_center_y - (field_height/2);
-//    Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
-//    cameraFeed = cameraFeed(myROI);
-//
-//		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
-//
-//    inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold1);
-//
-//    // Erode, then dialate to get a cleaner image
-//    morphOps(threshold1);
-//    trackFilteredBall(ball,threshold1,HSV,cameraFeed);
-//
-//    inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold2);
-//    // Erode, then dialate to get a cleaner image
-//    morphOps(threshold2);
-//    trackFilteredRobot(home1,threshold2,HSV,cameraFeed);
-//
-//    // Display the filtered robot/ball images
-//    //threshold=OR(threshold2,threshold2);
-//
-//    // Show Field Outline
-//    Rect fieldOutline(0, 0, field_width-1, field_height-1);
-//    rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
-//		imshow(windowName,cameraFeed);
-//    imshow(windowName2,threshold);
 
     //store image to matrix
     //capture.read(cameraFeed);
