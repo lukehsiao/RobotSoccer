@@ -298,7 +298,7 @@ void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
       intAngle = intAngle - 90;
     }
     else {
-      intAngle = 360 - intAngle;
+      intAngle = 270 + intAngle;
     }
 
 
