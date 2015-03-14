@@ -11,9 +11,6 @@
 
 #include "Object.h"
 
-#define HOME 1
-#define AWAY 2
-
 class Robot: public Object {
   public:
     Robot(int TEAM);
@@ -27,6 +24,11 @@ class Robot: public Object {
 
     int getAngle();
     void setAngle(int newAngle);
+
+    // Robot methods
+    void calibrateRobot(cv::VideoCapture capture);
+    void trackFilteredRobot(cv::Mat threshold, cv::Mat HSV, cv::Mat &cameraFeed);
+    void drawRobot(cv::Mat &frame);
 
   private:
     int angle;

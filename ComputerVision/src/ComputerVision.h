@@ -84,4 +84,12 @@ extern double dist_coeff[5][1];
 extern double cam_matrix[3][3];
 
 
+// Shared Utility Functions
+void createHSVTrackbars();
+std::string intToString(int number);
+cv::Point convertCoordinates(cv::Point imageCoordinates);
+void on_trackbar( int, void* );
+void morphOps(cv::Mat &thresh);
+void undistortImage(cv::Mat &source);
+
 #endif /* COMPUTERVISION_H_ */

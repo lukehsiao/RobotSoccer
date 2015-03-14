@@ -19,6 +19,11 @@ class Ball: public Object {
 
     // Destructor
     virtual ~Ball();
+
+    // Ball Methods
+    void calibrateBall(cv::VideoCapture capture);
+    void trackFilteredBall(cv::Mat threshold, cv::Mat HSV, cv::Mat &cameraFeed);
+    void drawBall(cv::Mat &frame);
 };
 
 #endif /* BALL_H_ */
