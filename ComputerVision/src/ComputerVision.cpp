@@ -15,6 +15,7 @@
 #include "Robot.h"
 #include "Object.h"
 
+
 using namespace cv;
 
 // Field variables
@@ -69,6 +70,99 @@ double cam_matrix[3][3] = {  {846,  0.0,  639.5},
                              {0.0,  849,  436.0},
                              {0.0,  0.0,  1.0}
                           };
+
+// Declaration of the 5 objects
+Robot home1(HOME), home2(HOME);
+Robot away1(AWAY), away2(AWAY);
+Ball ball;
+
+// Saves all of the pertinent calibration settings to human-readable file
+void saveSettings() {
+  // Open file
+  std::ofstream of("settings.data");
+
+  if (!of.is_open()) {
+    printf("\n\n\nERROR OPENING SETTINGS FILE!\n\n\n");
+    return;
+  }
+
+  const string h1 = "Home1";
+  const string h2 = "Home2";
+  const string a1 = "Away1";
+  const string a2 = "Away2";
+  const string b = "Ball";
+  const string f = "Field";
+  int tempH, tempS, tempV;
+
+  // Robot Save format:
+  // [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]
+  tempH = home1.getHSVmin().val[0];
+  tempS = home1.getHSVmin().val[1];
+  tempV = home1.getHSVmin().val[2];
+  of << h1 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
+  tempH = home1.getHSVmax().val[0];
+  tempS = home1.getHSVmax().val[1];
+  tempV = home1.getHSVmax().val[2];
+  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+
+  tempH = home2.getHSVmin().val[0];
+  tempS = home2.getHSVmin().val[1];
+  tempV = home2.getHSVmin().val[2];
+  of << h2 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
+  tempH = home2.getHSVmax().val[0];
+  tempS = home2.getHSVmax().val[1];
+  tempV = home2.getHSVmax().val[2];
+  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+
+  tempH = away1.getHSVmin().val[0];
+  tempS = away1.getHSVmin().val[1];
+  tempV = away1.getHSVmin().val[2];
+  of << a1 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
+  tempH = away1.getHSVmax().val[0];
+  tempS = away1.getHSVmax().val[1];
+  tempV = away1.getHSVmax().val[2];
+  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+
+  tempH = away2.getHSVmin().val[0];
+  tempS = away2.getHSVmin().val[1];
+  tempV = away2.getHSVmin().val[2];
+  of << a2 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
+  tempH = away2.getHSVmax().val[0];
+  tempS = away2.getHSVmax().val[1];
+  tempV = away2.getHSVmax().val[2];
+  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+
+
+  // Ball Save format:
+  // [Ball] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]
+  tempH = ball.getHSVmin().val[0];
+  tempS = ball.getHSVmin().val[1];
+  tempV = ball.getHSVmin().val[2];
+  of << b << " " <<  tempH << " " << tempS << " " <<  tempV;
+  tempH = ball.getHSVmax().val[0];
+  tempS = ball.getHSVmax().val[1];
+  tempV = ball.getHSVmax().val[2];
+  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+
+  // Field Save format:
+  // [Field] [x_pos] [y_pos] [width] [height]
+  of << f << " " << field_center_x << " " << field_center_y;
+  of << " " << field_width << " " <<  field_height << "\n";
+
+  // close file
+  of.close();
+}
+
+// Reads in saved settings from settings.data and stores them in objects
+void restoreSettings() {
+  FILE* in;
+  in = fopen("settings.data", "r");
+
+
+
+
+  fclose(in);
+}
 
 //-----------------------------------------------------------------------------
 // Utility Functions Shared by Classes
@@ -237,10 +331,14 @@ void calibrateField(VideoCapture capture) {
 
 // Generates all the calibration prompts (field + ball + robots)
 void runFullCalibration(VideoCapture capture, Ball &ball, Robot &Home1, Robot &Home2, Robot &Away1, Robot &Away2) {
+  restoreSettings();
   calibrateField(capture);
   ball.calibrateBall(capture);
   Home1.calibrateRobot(capture);
+  //Home2.calibrateRobot(capture);
   Away1.calibrateRobot(capture);
+  //Away2.calibrateRobot(capture);
+  saveSettings();
 }
 
 // TODO (Clover Wu) This function is supposed to OR together the processed MATS
@@ -363,11 +461,6 @@ int main(int argc, char* argv[]) {
 	//set height and width of capture frame
 	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
-
-  // When NOT in calibration mode, use actual hard-coded color values
-  Robot home1(HOME), home2(HOME);
-  Robot away1(AWAY), away2(AWAY);
-  Ball ball;
 
   if (calibrationMode == true) {
     // Calibrate the camera first
