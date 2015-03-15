@@ -151,17 +151,126 @@ void saveSettings() {
 
   // close file
   of.close();
+  printf("Settings Saved!\n");
 }
 
 // Reads in saved settings from settings.data and stores them in objects
 void restoreSettings() {
-  FILE* in;
-  in = fopen("settings.data", "r");
+  const string h1 = "Home1";
+  const string h2 = "Home2";
+  const string a1 = "Away1";
+  const string a2 = "Away2";
+  const string b = "Ball";
+  const string f = "Field";
+  int MAX_CHARS = 256;
+  int tempH, tempS, tempV;
 
+  std::stringstream ss;
+  std::ifstream in("settings.data");
+  if (!in.good()) {
+    printf("\n\n\nERROR, Couldn't open file\n\n\n");
+    return;
+  }
 
+  char line[MAX_CHARS];
+  char ID[MAX_CHARS];
 
+  //Begin Parsing File line by line
+  in.getline(line, MAX_CHARS);
+  ss.str(line);
+  // Read Identifier
+  ss >> ID;
+  if (ID == h1) {
+    ss >> tempH;
+    ss >> tempS;
+    ss >> tempV;
+    home1.setHSVmin(Scalar(tempH, tempS, tempV));
+    ss >> tempH;
+    ss >> tempS;
+    ss >> tempV;
+    home1.setHSVmax(Scalar(tempH, tempS, tempV));
+  }
+  ss.clear();
 
-  fclose(in);
+  in.getline(line, MAX_CHARS);
+  ss.str(line);
+  // Read Identifier
+  ss >> ID;
+  if (ID == h2) {
+    ss >> tempH;
+    ss >> tempS;
+    ss >> tempV;
+    home2.setHSVmin(Scalar(tempH, tempS, tempV));
+    ss >> tempH;
+    ss >> tempS;
+    ss >> tempV;
+    home2.setHSVmax(Scalar(tempH, tempS, tempV));
+  }
+  ss.clear();
+
+  in.getline(line, MAX_CHARS);
+  ss.str(line);
+  // Read Identifier
+  ss >> ID;
+  if (ID == a1) {
+    ss >> tempH;
+    ss >> tempS;
+    ss >> tempV;
+    away1.setHSVmin(Scalar(tempH, tempS, tempV));
+    ss >> tempH;
+    ss >> tempS;
+    ss >> tempV;
+    away1.setHSVmax(Scalar(tempH, tempS, tempV));
+  }
+  ss.clear();
+
+  in.getline(line, MAX_CHARS);
+  ss.str(line);
+  // Read Identifier
+  ss >> ID;
+  if (ID == a2) {
+    ss >> tempH;
+    ss >> tempS;
+    ss >> tempV;
+    away2.setHSVmin(Scalar(tempH, tempS, tempV));
+    ss >> tempH;
+    ss >> tempS;
+    ss >> tempV;
+    away2.setHSVmax(Scalar(tempH, tempS, tempV));
+  }
+  ss.clear();
+
+  // scan in ball
+  in.getline(line, MAX_CHARS);
+  ss.str(line);
+  // Read Identifier
+  ss >> ID;
+  if (ID == b) {
+    ss >> tempH;
+    ss >> tempS;
+    ss >> tempV;
+    ball.setHSVmin(Scalar(tempH, tempS, tempV));
+    ss >> tempH;
+    ss >> tempS;
+    ss >> tempV;
+    ball.setHSVmax(Scalar(tempH, tempS, tempV));
+  }
+  ss.clear();
+
+  in.getline(line, MAX_CHARS);
+  ss.str(line);
+  // Read Identifier
+  ss >> ID;
+  if (ID == f) {
+    ss >> field_center_x;
+    ss >> field_center_y;
+    ss >> field_width;
+    ss >> field_height;
+  }
+  ss.clear();
+
+  in.close();
+  printf("Settings Restored!\n");
 }
 
 //-----------------------------------------------------------------------------
@@ -267,12 +376,6 @@ void calibrateField(VideoCapture capture) {
   Mat cameraFeed;
   int field_origin_x;
   int field_origin_y;
-
-  // Set Initial Field Values
-  field_center_x = 590;
-  field_center_y = 410;
-  field_width = 1074;
-  field_height = 780;
 
   //create window for trackbars
   namedWindow(trackbarWindowName,0);
@@ -450,6 +553,12 @@ int main(int argc, char* argv[]) {
 	Mat HSV;
 	Mat bw; // black and white mat
   Mat BGR;// BGR mat
+
+  // Set Initial Field Values
+  field_center_x = 590;
+  field_center_y = 410;
+  field_width = 1074;
+  field_height = 780;
 
 	//video capture object to acquire webcam feed
 	const string videoStreamAddress = "http://192.168.1.90/mjpg/video.mjpg";

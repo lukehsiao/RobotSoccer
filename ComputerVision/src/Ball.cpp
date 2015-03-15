@@ -36,13 +36,13 @@ void Ball::calibrateBall(VideoCapture capture) {
   //create trackbars
   createHSVTrackbars();
 
-  // Set Trackbar intial values to near Yellow
-  setTrackbarPos( "H_MIN", trackbarWindowName, 30);
-  setTrackbarPos( "H_MAX", trackbarWindowName, 65);
-  setTrackbarPos( "S_MIN", trackbarWindowName, 0);
-  setTrackbarPos( "S_MAX", trackbarWindowName, 255);
-  setTrackbarPos( "V_MIN", trackbarWindowName, 180);
-  setTrackbarPos( "V_MAX", trackbarWindowName, 255);
+  // Set Trackbar intial values
+  setTrackbarPos( "H_MIN", trackbarWindowName, this->getHSVmin().val[0]);
+  setTrackbarPos( "H_MAX", trackbarWindowName, this->getHSVmax().val[0]);
+  setTrackbarPos( "S_MIN", trackbarWindowName, this->getHSVmin().val[1]);
+  setTrackbarPos( "S_MAX", trackbarWindowName, this->getHSVmax().val[1]);
+  setTrackbarPos( "V_MIN", trackbarWindowName, this->getHSVmin().val[2]);
+  setTrackbarPos( "V_MAX", trackbarWindowName, this->getHSVmax().val[2]);
 
   // Wait forever until user sets the values
    while (1) {
