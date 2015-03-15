@@ -40,6 +40,9 @@ typedef struct {
 // All of these values are defined in ComputerVision.cpp
 //----------------------------------------------------------------------------
 
+// Which TEAM are we on?
+extern int TEAM;
+
 // Field variables
 extern int field_width;
 extern int field_height;

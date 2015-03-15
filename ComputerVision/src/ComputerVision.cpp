@@ -18,6 +18,10 @@
 
 using namespace cv;
 
+// Change this parameter to determine which team we are on!
+// Either set it to HOME or AWAY
+int TEAM = AWAY;
+
 // Field variables
 int field_width;
 int field_height;

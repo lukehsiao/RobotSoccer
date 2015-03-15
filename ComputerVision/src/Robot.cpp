@@ -173,7 +173,7 @@ void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
       c2 = 1;
     }
 
-    // Get momentsf
+    // Get moments
     vector<Moments> robotMoments(contours.size());
     for (unsigned i = 0; i < contours.size(); i++) {
       robotMoments[i] = moments(contours[i], false);
@@ -213,25 +213,44 @@ void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
       intAngle = 270 + intAngle;
     }
 
-
-    // TODO Filtering bad data (if the change in xpos or ypos is too large, ignore data
-    // Set Robot variables
-
-    if (abs(intAngle - this->getOldAngle()) > 5) {
-      this->setAngle(intAngle);
-    }
-
     Point fieldPosition = convertCoordinates(Point((int)centerPoints[c1].x,
                                                    (int)centerPoints[c1].y));
-    if (abs(fieldPosition.x - this->get_x_pos()) > MIN_CHANGE &&
-        abs(fieldPosition.x - this->get_x_pos()) < MAX_CHANGE) {
-      this->set_x_pos(fieldPosition.x);
-      this->set_img_x((int)centerPoints[c1].x);
+
+    // Assign Robot it's variables based on team
+    if (TEAM == HOME) {
+      if (abs(intAngle - this->getOldAngle()) > MIN_CHANGE) {
+        this->setAngle(intAngle);
+      }
+      if (abs(fieldPosition.x - this->get_x_pos()) > MIN_CHANGE &&
+          abs(fieldPosition.x - this->get_x_pos()) < MAX_CHANGE) {
+        this->set_x_pos(fieldPosition.x);
+        this->set_img_x((int)centerPoints[c1].x);
+      }
+      if (abs(fieldPosition.y - this->get_y_pos()) > MIN_CHANGE &&
+          abs(fieldPosition.y - this->get_y_pos()) < MAX_CHANGE) {
+        this->set_y_pos(fieldPosition.y);
+        this->set_img_y((int)centerPoints[c1].y);
+      }
     }
-    if (abs(fieldPosition.y - this->get_y_pos()) > MIN_CHANGE &&
-        abs(fieldPosition.y - this->get_y_pos()) < MAX_CHANGE) {
-      this->set_y_pos(fieldPosition.y);
-      this->set_img_y((int)centerPoints[c1].y);
+    else {
+      if (abs(intAngle - this->getOldAngle()) > MIN_CHANGE) {
+        if (intAngle <= 180) {
+          this->setAngle(180 + intAngle);
+        }
+        else {
+          this->setAngle(intAngle-180);
+        }
+      }
+      if (abs(fieldPosition.x - this->get_x_pos()) > MIN_CHANGE &&
+          abs(fieldPosition.x - this->get_x_pos()) < MAX_CHANGE) {
+        this->set_x_pos(-fieldPosition.x);
+        this->set_img_x((int)centerPoints[c1].x);
+      }
+      if (abs(fieldPosition.y - this->get_y_pos()) > MIN_CHANGE &&
+          abs(fieldPosition.y - this->get_y_pos()) < MAX_CHANGE) {
+        this->set_y_pos(-fieldPosition.y);
+        this->set_img_y((int)centerPoints[c1].y);
+      }
     }
 
     this->drawRobot(cameraFeed);
