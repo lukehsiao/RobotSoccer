@@ -24,6 +24,12 @@ typedef struct {
   unsigned int nsec;
 } Time;
 
+typedef struct {
+  Time timestamp;
+  cv::Mat image;
+  cv::Mat HSV;
+} Frame;
+
 #define PI 3.14159265
 #define MIN_CHANGE 3
 #define MAX_CHANGE 1000

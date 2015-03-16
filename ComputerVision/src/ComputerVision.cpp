@@ -14,6 +14,9 @@
 #include "Ball.h"
 #include "Robot.h"
 #include "Object.h"
+#include <pthread.h>
+#include <semaphore.h>
+#include <queue>
 
 
 using namespace cv;
@@ -79,6 +82,11 @@ double cam_matrix[3][3] = {  {846,  0.0,  639.5},
 Robot home1(HOME), home2(HOME);
 Robot away1(AWAY), away2(AWAY);
 Ball ball;
+
+// Double buffer reading
+sem_t imageSema;
+std::queue<Frame> frameFifo;
+
 
 // Saves all of the pertinent calibration settings to human-readable file
 void saveSettings() {
@@ -542,6 +550,28 @@ Time getNextImage(std::ifstream & myFile, std::vector<char> & imageArray) {
   return timestamp;
 }
 
+void * parserThread(void * notUsed){
+  system("curl -s http://192.168.1.90/mjpg/video.mjpg > imagefifo &");
+  std::ifstream myFile ("imagefifo",std::ifstream::binary);
+  std::vector<char> imageArray;
+  Frame frame;
+  do {
+    frame.timestamp = getNextImage(myFile, imageArray);
+    int value;
+    sem_getvalue(&imageSema, &value);
+    if (value < 2){
+      Mat image = imdecode(imageArray,CV_LOAD_IMAGE_COLOR);
+      frame.image = image;
+      undistortImage(frame.image);
+      frameFifo.push(frame);
+      sem_post(&imageSema);
+    } else {
+      printf("frame skipped: %u.%09u\n",frame.timestamp.sec,frame.timestamp.nsec);
+    }
+  } while (1);
+  return NULL;
+}
+
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
 	bool calibrationMode = true;
@@ -582,21 +612,30 @@ int main(int argc, char* argv[]) {
 
   namedWindow(windowName,WINDOW_NORMAL);
 
-  /************************************************************************/
-	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
   capture.release();
-  system("curl -s http://192.168.1.90/mjpg/video.mjpg > imagefifo &");
-  std::ifstream myFile ("imagefifo",std::ifstream::binary);
-  std::vector<char> imageArray;
-	while(1) {
 
+  /************************************************************************/
+  //start forked process and threads that:
+  //  1) read stream into a ifstream
+  //  2) parses stream into memory buffer and decodes it into openCV mat
+  //  3) processes mat
+
+
+  pthread_t parser;
+  sem_init(&imageSema,0,0);
+  pthread_create (&parser, NULL, parserThread, NULL);
+
+  while(1) {
+    sem_wait(&imageSema);
+    Frame frame = frameFifo.front();
+    frameFifo.pop();
     //store image to matrix
     //capture.read(cameraFeed);
-	  Time timestamp = getNextImage(myFile,imageArray);
+	  Time timestamp = frame.timestamp;
 	  printf("%u.%09u\n",timestamp.sec,timestamp.nsec);
-	  cameraFeed = imdecode(imageArray,CV_LOAD_IMAGE_COLOR);
-    undistortImage(cameraFeed);
+	  //printf("%d\n",frameFifo.size());
+	  cameraFeed = frame.image;
 
     //convert frame from BGR to HSV colorspace
     field_origin_x = field_center_x - (field_width/2);
@@ -620,10 +659,10 @@ int main(int argc, char* argv[]) {
 
 
     // Show Field Outline
-    Rect fieldOutline(0, 0, field_width, field_height);
-    rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
+    //Rect fieldOutline(0, 0, field_width, field_height);
+    //rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
     //create window for trackbars
-    imshow(windowName,cameraFeed);
+    //imshow(windowName,cameraFeed);
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
