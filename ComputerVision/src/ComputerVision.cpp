@@ -15,7 +15,6 @@
 #include "Robot.h"
 #include "Object.h"
 
-
 using namespace cv;
 
 // Change this parameter to determine which team we are on!
@@ -80,7 +79,6 @@ Robot home1(HOME), home2(HOME);
 Robot away1(AWAY), away2(AWAY);
 Ball ball;
 
-
 // Globals used for processing threads
 sem_t frameRawSema;
 std::queue<FrameRaw> frameRawFifo;
@@ -104,6 +102,16 @@ void saveSettings() {
   const string b = "Ball";
   const string f = "Field";
   int tempH, tempS, tempV;
+
+  // Print human-readable header for settings file
+  of << "#############################################################" << "\n";
+  of << "# This settings file contains the color calibration settings" << "\n";
+  of << "# Format: " << "\n";
+  of << "# [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]" << "\n";
+  of << "# [Ball] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]" << "\n";
+  of << "# [Field] [x_center_pos] [y_center_pos] [width] [height]" << "\n";
+  of << "#############################################################" << "\n";
+  of << "\n\n";
 
   // Robot Save format:
   // [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]
@@ -173,7 +181,6 @@ void restoreSettings() {
   const string a2 = "Away2";
   const string b = "Ball";
   const string f = "Field";
-  int MAX_CHARS = 256;
   int tempH, tempS, tempV;
 
   std::stringstream ss;
@@ -183,103 +190,75 @@ void restoreSettings() {
     return;
   }
 
-  char line[MAX_CHARS];
-  char ID[MAX_CHARS];
+  // char line[MAX_CHARS];
+  std::string ID;
+  std::string line;
 
-  //Begin Parsing File line by line
-  in.getline(line, MAX_CHARS);
-  ss.str(line);
-  // Read Identifier
-  ss >> ID;
-  if (ID == h1) {
-    ss >> tempH;
-    ss >> tempS;
-    ss >> tempV;
-    home1.setHSVmin(Scalar(tempH, tempS, tempV));
-    ss >> tempH;
-    ss >> tempS;
-    ss >> tempV;
-    home1.setHSVmax(Scalar(tempH, tempS, tempV));
+  // Parse File line by line
+  while(getline(in, line)) {
+    if (line.c_str()[0] == '#') {
+      continue; //skip comments
+    }
+    ss.str(line);
+    ss >> ID;
+    if (ID == h1) {
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      home1.setHSVmin(Scalar(tempH, tempS, tempV));
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      home1.setHSVmax(Scalar(tempH, tempS, tempV));
+    }
+    else if (ID == h2) {
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      home2.setHSVmin(Scalar(tempH, tempS, tempV));
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      home2.setHSVmax(Scalar(tempH, tempS, tempV));
+    }
+    else if (ID == a1) {
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      away1.setHSVmin(Scalar(tempH, tempS, tempV));
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      away1.setHSVmax(Scalar(tempH, tempS, tempV));
+    }
+    else if (ID == a2) {
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      away2.setHSVmin(Scalar(tempH, tempS, tempV));
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      away2.setHSVmax(Scalar(tempH, tempS, tempV));
+    }
+    else if (ID == b) {
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      ball.setHSVmin(Scalar(tempH, tempS, tempV));
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      ball.setHSVmax(Scalar(tempH, tempS, tempV));
+    }
+    else if (ID == f) {
+      ss >> field_center_x;
+      ss >> field_center_y;
+      ss >> field_width;
+      ss >> field_height;
+    }
+    ss.clear();
   }
-  ss.clear();
-
-  in.getline(line, MAX_CHARS);
-  ss.str(line);
-  // Read Identifier
-  ss >> ID;
-  if (ID == h2) {
-    ss >> tempH;
-    ss >> tempS;
-    ss >> tempV;
-    home2.setHSVmin(Scalar(tempH, tempS, tempV));
-    ss >> tempH;
-    ss >> tempS;
-    ss >> tempV;
-    home2.setHSVmax(Scalar(tempH, tempS, tempV));
-  }
-  ss.clear();
-
-  in.getline(line, MAX_CHARS);
-  ss.str(line);
-  // Read Identifier
-  ss >> ID;
-  if (ID == a1) {
-    ss >> tempH;
-    ss >> tempS;
-    ss >> tempV;
-    away1.setHSVmin(Scalar(tempH, tempS, tempV));
-    ss >> tempH;
-    ss >> tempS;
-    ss >> tempV;
-    away1.setHSVmax(Scalar(tempH, tempS, tempV));
-  }
-  ss.clear();
-
-  in.getline(line, MAX_CHARS);
-  ss.str(line);
-  // Read Identifier
-  ss >> ID;
-  if (ID == a2) {
-    ss >> tempH;
-    ss >> tempS;
-    ss >> tempV;
-    away2.setHSVmin(Scalar(tempH, tempS, tempV));
-    ss >> tempH;
-    ss >> tempS;
-    ss >> tempV;
-    away2.setHSVmax(Scalar(tempH, tempS, tempV));
-  }
-  ss.clear();
-
-  // scan in ball
-  in.getline(line, MAX_CHARS);
-  ss.str(line);
-  // Read Identifier
-  ss >> ID;
-  if (ID == b) {
-    ss >> tempH;
-    ss >> tempS;
-    ss >> tempV;
-    ball.setHSVmin(Scalar(tempH, tempS, tempV));
-    ss >> tempH;
-    ss >> tempS;
-    ss >> tempV;
-    ball.setHSVmax(Scalar(tempH, tempS, tempV));
-  }
-  ss.clear();
-
-  in.getline(line, MAX_CHARS);
-  ss.str(line);
-  // Read Identifier
-  ss >> ID;
-  if (ID == f) {
-    ss >> field_center_x;
-    ss >> field_center_y;
-    ss >> field_width;
-    ss >> field_height;
-  }
-  ss.clear();
-
   in.close();
   printf("Settings Restored!\n");
 }

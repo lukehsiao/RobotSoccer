@@ -21,18 +21,17 @@
 #include <semaphore.h>
 #include <queue>
 
-typedef struct {
-  unsigned int sec;
-  unsigned int nsec;
-} Time;
+#include "ros/ros.h"
+#include "std_msgs/String.h"
+#include "robot_soccer/locations.h"
 
 typedef struct {
-  Time timestamp;
+  ros::Time timestamp;
   std::vector<char> image;
 } FrameRaw;
 
 typedef struct {
-  Time timestamp;
+  ros::Time timestamp;
   cv::Mat image;
 } FrameMat;
 
