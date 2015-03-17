@@ -36,7 +36,7 @@ typedef struct {
 } FrameMat;
 
 #define PI 3.14159265
-#define MIN_CHANGE 3
+#define MIN_CHANGE 2
 #define MAX_CHANGE 1000
 
 //default capture width and height
