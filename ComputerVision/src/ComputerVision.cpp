@@ -113,6 +113,7 @@ void saveSettings() {
   of << "# [Ball] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]" << "\n";
   of << "# [Field] [x_center_pos] [y_center_pos] [width] [height]" << "\n";
   of << "#############################################################" << "\n";
+  of << "\n\n";
 
   // Robot Save format:
   // [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]

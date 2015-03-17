@@ -110,7 +110,8 @@ void saveSettings() {
   of << "# [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]" << "\n";
   of << "# [Ball] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]" << "\n";
   of << "# [Field] [x_center_pos] [y_center_pos] [width] [height]" << "\n";
-  of << "#############################################################" << "\n";  
+  of << "#############################################################" << "\n";
+  of << "\n\n"; 
 
   // Robot Save format:
   // [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]
@@ -578,19 +579,14 @@ int main(int argc, char* argv[]) {
 	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
 
-  // When NOT in calibration mode, use actual hard-coded color values
-  Robot home1(HOME), home2(HOME);
-  Robot away1(AWAY), away2(AWAY);
-  Ball ball;
-
   if (calibrationMode == true) {
     // Calibrate the camera first
     runFullCalibration(capture);
   }
 
-  namedWindow(windowName,WINDOW_NORMAL);
+  //namedWindow(windowName,WINDOW_NORMAL);
 
-    /***********************Ros Publisher************************************/
+  /***********************Ros Publisher************************************/
 
   ros::init(argc, argv, "computer_vision");
   ros::NodeHandle n;
@@ -650,7 +646,7 @@ int main(int argc, char* argv[]) {
     //create window for trackbars
     imshow(windowName,cameraFeed);
     
-        /***********************Ros Publisher************************************/
+    /***********************Ros Publisher************************************/
 
     // Create message object
     robot_soccer::locations coordinates;
