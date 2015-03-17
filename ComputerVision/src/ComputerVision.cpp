@@ -14,9 +14,6 @@
 #include "Ball.h"
 #include "Robot.h"
 #include "Object.h"
-#include <pthread.h>
-#include <semaphore.h>
-#include <queue>
 
 
 using namespace cv;
@@ -83,10 +80,12 @@ Robot home1(HOME), home2(HOME);
 Robot away1(AWAY), away2(AWAY);
 Ball ball;
 
-// Double buffer reading
-sem_t imageSema;
-std::queue<Frame> frameFifo;
 
+// Globals used for processing threads
+sem_t frameRawSema;
+std::queue<FrameRaw> frameRawFifo;
+sem_t frameMatSema;
+std::queue<FrameMat> frameMatFifo;
 
 // Saves all of the pertinent calibration settings to human-readable file
 void saveSettings() {
@@ -286,7 +285,7 @@ void restoreSettings() {
 }
 
 //-----------------------------------------------------------------------------
-// Utility Functions Shared by Classes
+// Utility Functions Shared by Classes =======================================
 //-----------------------------------------------------------------------------
 
 // This function is called whenever a trackbar changes
@@ -379,8 +378,9 @@ void morphOps(Mat &thresh) {
   erode(thresh,thresh,erodeElement);
   dilate(thresh,thresh,dilateElement);
 }
+
 //-----------------------------------------------------------------------------
-//  End of Utility Functions Shared by Classes
+//  End of Utility Functions Shared by Classes ===============================
 //-----------------------------------------------------------------------------
 
 // Generates prompts for field calibration of size/center
@@ -445,57 +445,22 @@ void calibrateField(VideoCapture capture) {
 }
 
 // Generates all the calibration prompts (field + ball + robots)
-void runFullCalibration(VideoCapture capture, Ball &ball, Robot &Home1, Robot &Home2, Robot &Away1, Robot &Away2) {
+void runFullCalibration(VideoCapture capture) {
   restoreSettings();
   calibrateField(capture);
   ball.calibrateBall(capture);
-  Home1.calibrateRobot(capture);
+  home1.calibrateRobot(capture);
   //Home2.calibrateRobot(capture);
-  Away1.calibrateRobot(capture);
+  away1.calibrateRobot(capture);
   //Away2.calibrateRobot(capture);
   saveSettings();
 }
-
-// TODO (Clover Wu) This function is supposed to OR together the processed MATS
-// To produce a balck and white image illustrating how well our color parsing
-// is performing.
-//Mat OR(Mat mat1, Mat mat2){
-//  Mat BGR_ball; //BGR image of ball;
-//  Mat BGR_robot; //BGR image of robot;
-//  Mat bw_ball; //Black and white image of ball
-//  Mat bw_robot;
-//  Mat mat3_bw;
-//  Mat mat3_BGR;
-//  Mat mat3_HSV;
-//
-//  cvtColor(mat1,BGR_ball,COLOR_HSV2BGR);
-//  cvtColor(BGR_ball,bw_ball,COLOR_BGR2GRAY);
-//  cvtColor(mat2,BGR_robot,COLOR_HSV2BGR);
-//  cvtColor(BGR_robot,bw_robot,COLOR_BGR2GRAY);
-//  mat3_bw=bw_ball;
-//
-//  int col=mat1.cols;
-//  int row=mat1.rows;
-//
-//  for (int i=0; i<col; i++)
-//  {
-//    for (int j=0; j<row; j++)
-//    {
-//      mat3_bw.at<uchar>(i,j)=bw_ball.at<uchar>(i,j)+bw_robot.at<uchar>(i,j);  //assume white=255,black=0;
-//      if (mat3_bw.at<uchar>(i,j)>255)                     //b+b=0=b; w+b=255=w; w+w=510,over!
-//        mat3_bw.at<uchar>(i,j)=255;
-//    }// not sure is 'MAT(i,j)' the right way to
-//  }
-//  cvtColor(mat3_bw,mat3_BGR,COLOR_GRAY2BGR);
-//  cvtColor(mat3_BGR,mat3_HSV,COLOR_BGR2HSV);
-//  printf("\n\nYES!!!\n");
-//  return mat3_HSV;
-//}
 
 // Special function for both getting the next image and reading the timestamp
 // from the IP camera. Currently NOT very optimized for performance.
 Time getNextImage(std::ifstream & myFile, std::vector<char> & imageArray) {
   imageArray.clear();
+  imageArray.reserve(1024*64);
   char buffer[4];
   Time timestamp;
   bool foundImage = false;
@@ -550,25 +515,52 @@ Time getNextImage(std::ifstream & myFile, std::vector<char> & imageArray) {
   return timestamp;
 }
 
+// This thread loads the streaming video into memory to be loaded into
+// OpenCV. The semaphore is a simple counting semaphore
 void * parserThread(void * notUsed){
   system("curl -s http://192.168.1.90/mjpg/video.mjpg > imagefifo &");
   std::ifstream myFile ("imagefifo",std::ifstream::binary);
   std::vector<char> imageArray;
-  Frame frame;
+  FrameRaw frame;
   do {
     frame.timestamp = getNextImage(myFile, imageArray);
+    frame.image = imageArray;
     int value;
-    sem_getvalue(&imageSema, &value);
-    if (value < 2){
-      Mat image = imdecode(imageArray,CV_LOAD_IMAGE_COLOR);
-      frame.image = image;
-      undistortImage(frame.image);
-      frameFifo.push(frame);
-      sem_post(&imageSema);
-    } else {
-      printf("frame skipped: %u.%09u\n",frame.timestamp.sec,frame.timestamp.nsec);
+    sem_getvalue(&frameRawSema, &value);
+    if (value < MIN_BUFFER_SIZE){
+      frameRawFifo.push(frame);
+      sem_post(&frameRawSema);
+    }
+    else {
+      printf("frame dropped (Capture): %u.%09u\n",frame.timestamp.sec,frame.timestamp.nsec);
     }
   } while (1);
+  return NULL;
+}
+
+//This thread converts JPEGs into Mats and undistorts them.
+void * processorThread(void * notUsed){
+  FrameRaw frameRaw;
+  FrameMat frameMat;
+  while(1){
+    sem_wait(&frameRawSema);
+    frameRaw = frameRawFifo.front();
+    frameRawFifo.pop();
+
+    int value;
+    sem_getvalue(&frameMatSema, &value);
+    if (value < MIN_BUFFER_SIZE){
+      frameMat.timestamp = frameRaw.timestamp;
+      frameMat.image = imdecode(frameRaw.image, CV_LOAD_IMAGE_COLOR);
+
+      undistortImage(frameMat.image);
+      frameMatFifo.push(frameMat);
+      sem_post(&frameMatSema);
+    }
+    else {
+      printf("frame dropped (Process): %u.%09u\n",frameRaw.timestamp.sec,frameRaw.timestamp.nsec);
+    }
+  }
   return NULL;
 }
 
@@ -607,34 +599,33 @@ int main(int argc, char* argv[]) {
 
   if (calibrationMode == true) {
     // Calibrate the camera first
-    runFullCalibration(capture, ball, home1, home2, away1, away2);
+    runFullCalibration(capture);
   }
-
-  namedWindow(windowName,WINDOW_NORMAL);
 
 	//all of our operations will be performed within this loop
   capture.release();
 
-  /************************************************************************/
+  //namedWindow(windowName,WINDOW_NORMAL);
+
+  // ************************************************************************
   //start forked process and threads that:
   //  1) read stream into a ifstream
   //  2) parses stream into memory buffer and decodes it into openCV mat
   //  3) processes mat
-
-
   pthread_t parser;
-  sem_init(&imageSema,0,0);
+  pthread_t processor;
+  sem_init(&frameRawSema,0,0);
+  sem_init(&frameMatSema,0,0);
   pthread_create (&parser, NULL, parserThread, NULL);
+  pthread_create (&processor, NULL, processorThread, NULL);
+  // ************************************************************************
 
   while(1) {
-    sem_wait(&imageSema);
-    Frame frame = frameFifo.front();
-    frameFifo.pop();
+    sem_wait(&frameMatSema);
+    FrameMat frame = frameMatFifo.front();
+    frameMatFifo.pop();
     //store image to matrix
-    //capture.read(cameraFeed);
-	  Time timestamp = frame.timestamp;
-	  printf("%u.%09u\n",timestamp.sec,timestamp.nsec);
-	  //printf("%d\n",frameFifo.size());
+	  //Time timestamp = frame.timestamp;
 	  cameraFeed = frame.image;
 
     //convert frame from BGR to HSV colorspace
@@ -659,10 +650,10 @@ int main(int argc, char* argv[]) {
 
 
     // Show Field Outline
-    //Rect fieldOutline(0, 0, field_width, field_height);
-    //rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
+    Rect fieldOutline(0, 0, field_width, field_height);
+    rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
     //create window for trackbars
-    //imshow(windowName,cameraFeed);
+    imshow(windowName,cameraFeed);
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command

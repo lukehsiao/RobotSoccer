@@ -17,7 +17,9 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv/cv.h>
-
+#include <pthread.h>
+#include <semaphore.h>
+#include <queue>
 
 typedef struct {
   unsigned int sec;
@@ -26,9 +28,13 @@ typedef struct {
 
 typedef struct {
   Time timestamp;
+  std::vector<char> image;
+} FrameRaw;
+
+typedef struct {
+  Time timestamp;
   cv::Mat image;
-  cv::Mat HSV;
-} Frame;
+} FrameMat;
 
 #define PI 3.14159265
 #define MIN_CHANGE 3
@@ -40,6 +46,9 @@ typedef struct {
 
 #define HOME 1
 #define AWAY 2
+
+
+#define MIN_BUFFER_SIZE 3
 
 //----------------------------------------------------------------------------
 // Extern variables to share between files
