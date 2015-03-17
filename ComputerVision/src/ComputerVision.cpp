@@ -47,7 +47,7 @@ int field_center_x_max = FRAME_WIDTH;
 int field_center_y_max = FRAME_HEIGHT;
 
 //max number of objects to be detected in frame
-const int MAX_NUM_OBJECTS=50;
+const int MAX_NUM_OBJECTS = 50;
 
 //minimum and maximum object area
 const int MIN_OBJECT_AREA = 7*7;

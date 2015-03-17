@@ -233,21 +233,23 @@ void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
       }
     }
     else {
-      if (abs(intAngle - this->getOldAngle()) > MIN_CHANGE) {
-        if (intAngle <= 180) {
-          this->setAngle(180 + intAngle);
-        }
-        else {
-          this->setAngle(intAngle-180);
-        }
+      // Convert to Away Angle
+      if (intAngle <= 180) {
+        intAngle = 180 + intAngle;
       }
-      if (abs(fieldPosition.x - this->get_x_pos()) > MIN_CHANGE &&
-          abs(fieldPosition.x - this->get_x_pos()) < MAX_CHANGE) {
+      else {
+        intAngle = intAngle - 180;
+      }
+      if (abs(intAngle - this->getOldAngle()) > MIN_CHANGE) {
+        this->setAngle(intAngle);
+      }
+      if (abs(fieldPosition.x + this->get_x_pos()) > MIN_CHANGE &&
+          abs(fieldPosition.x + this->get_x_pos()) < MAX_CHANGE) {
         this->set_x_pos(-fieldPosition.x);
         this->set_img_x((int)centerPoints[c1].x);
       }
-      if (abs(fieldPosition.y - this->get_y_pos()) > MIN_CHANGE &&
-          abs(fieldPosition.y - this->get_y_pos()) < MAX_CHANGE) {
+      if (abs(fieldPosition.y + this->get_y_pos()) > MIN_CHANGE &&
+          abs(fieldPosition.y + this->get_y_pos()) < MAX_CHANGE) {
         this->set_y_pos(-fieldPosition.y);
         this->set_img_y((int)centerPoints[c1].y);
       }
