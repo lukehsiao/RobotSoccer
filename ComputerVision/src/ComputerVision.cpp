@@ -196,7 +196,7 @@ void restoreSettings() {
 
   // Parse File line by line
   while(getline(in, line)) {
-    if (line.at(0) == '#' || line.size() == 0) {
+    if (line.c_str()[0] == '#') {
       continue; //skip comments
     }
     ss.str(line);
