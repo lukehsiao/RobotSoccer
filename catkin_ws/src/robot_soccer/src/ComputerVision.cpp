@@ -14,6 +14,7 @@
 #include "Robot.h"
 #include "Object.h"
 
+
 using namespace cv;
 
 // Change this parameter to determine which team we are on!
@@ -447,11 +448,11 @@ void calibrateField(VideoCapture capture) {
 }
 
 // Generates all the calibration prompts (field + ball + robots)
-void runFullCalibration(VideoCapture capture, Ball &ball, Robot &Home1, Robot &Home2, Robot &Away1, Robot &Away2) {
+void runFullCalibration(VideoCapture capture) {
   calibrateField(capture);
   ball.calibrateBall(capture);
-  Home1.calibrateRobot(capture);
-  Away1.calibrateRobot(capture);
+  home1.calibrateRobot(capture);
+  away1.calibrateRobot(capture);
 }
 
 // Special function for both getting the next image and reading the timestamp
@@ -525,10 +526,11 @@ void * parserThread(void * notUsed){
     frame.image = imageArray;
     int value;
     sem_getvalue(&frameRawSema, &value);
-    if (value < 3){
+    if (value < MIN_BUFFER_SIZE){
       frameRawFifo.push(frame);
       sem_post(&frameRawSema);
-    } else {
+    } 
+    else {
       printf("frame dropped (Capture): %u.%09u\n",frame.timestamp.sec,frame.timestamp.nsec);
     }
   } while (1);
@@ -539,21 +541,22 @@ void * parserThread(void * notUsed){
 void * processorThread(void * notUsed){
   FrameRaw frameRaw;
   FrameMat frameMat;
-  while(1){
+  while(1) {
     sem_wait(&frameRawSema);
     frameRaw = frameRawFifo.front();
     frameRawFifo.pop();
 
     int value;
     sem_getvalue(&frameMatSema, &value);
-    if (value < 2){
+    if (value < MIN_BUFFER_SIZE){
       frameMat.timestamp = frameRaw.timestamp;
       frameMat.image = imdecode(frameRaw.image, CV_LOAD_IMAGE_COLOR);
 
       undistortImage(frameMat.image);
       frameMatFifo.push(frameMat);
       sem_post(&frameMatSema);
-    } else {
+    } 
+    else {
       printf("frame dropped (Process): %u.%09u\n",frameRaw.timestamp.sec,frameRaw.timestamp.nsec);
     }
   }
@@ -600,7 +603,7 @@ int main(int argc, char* argv[]) {
 
   if (calibrationMode == true) {
     // Calibrate the camera first
-    runFullCalibration(capture, ball, home1, home2, away1, away2);
+    runFullCalibration(capture);
   }
 
   namedWindow(windowName,WINDOW_NORMAL);
