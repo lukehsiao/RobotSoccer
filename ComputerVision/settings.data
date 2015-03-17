@@ -5,6 +5,8 @@
 # [Ball] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]
 # [Field] [x_center_pos] [y_center_pos] [width] [height]
 #############################################################
+
+
 Home1 80 229 180 100 256 256
 Home2 0 0 235 5 255 255
 Away1 156 112 0 220 217 255

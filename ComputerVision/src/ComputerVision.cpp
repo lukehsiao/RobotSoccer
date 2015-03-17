@@ -15,7 +15,6 @@
 #include "Robot.h"
 #include "Object.h"
 
-
 using namespace cv;
 
 // Change this parameter to determine which team we are on!
@@ -79,7 +78,6 @@ double cam_matrix[3][3] = {  {846,  0.0,  639.5},
 Robot home1(HOME), home2(HOME);
 Robot away1(AWAY), away2(AWAY);
 Ball ball;
-
 
 // Globals used for processing threads
 sem_t frameRawSema;
@@ -193,12 +191,12 @@ void restoreSettings() {
   }
 
   // char line[MAX_CHARS];
-  string ID;
-  string line;
+  std::string ID;
+  std::string line;
 
   // Parse File line by line
   while(getline(in, line)) {
-    if (line.at(0) == '#') {
+    if (line.at(0) == '#' || line.size() == 0) {
       continue; //skip comments
     }
     ss.str(line);
