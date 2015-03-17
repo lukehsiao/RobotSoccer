@@ -172,12 +172,12 @@ void Ball::trackFilteredBall(Mat threshold, Mat HSV, Mat &cameraFeed) {
           }
         }
         else {
-          if (abs(this->get_x_pos() - fieldPosition.x) > MIN_CHANGE) {
+          if (abs(this->get_x_pos() + fieldPosition.x) > MIN_CHANGE) {
             this->set_x_pos(-fieldPosition.x);
             this->set_img_x(moment.m10/moment.m00);
           }
 
-          if (abs(this->get_y_pos() - fieldPosition.y) > MIN_CHANGE) {
+          if (abs(this->get_y_pos() + fieldPosition.y) > MIN_CHANGE) {
             this->set_y_pos(-fieldPosition.y);
             this->set_img_y(moment.m01/moment.m00);
           }

@@ -21,6 +21,10 @@ using namespace cv;
 // Either set it to HOME or AWAY
 int TEAM = AWAY;
 
+// Change this parameter to switch to performance, no GUI mode
+// Either set it to GUI or NO_GUI
+int PERF_MODE = GUI;
+
 // Field variables
 int field_width;
 int field_height;
@@ -88,7 +92,7 @@ std::queue<FrameMat> frameMatFifo;
 // Saves all of the pertinent calibration settings to human-readable file
 void saveSettings() {
   // Open file
-  std::ofstream of("/home/ecestudent/Documents/RobotSoccer/catkin_ws/settings.data");
+  std::ofstream of("settings.data");
 
   if (!of.is_open()) {
     printf("\n\n\nERROR OPENING SETTINGS FILE!\n\n\n");
@@ -640,11 +644,13 @@ int main(int argc, char* argv[]) {
     away1.trackFilteredRobot(threshold,HSV,cameraFeed);
 
 
-    // Show Field Outline
-    Rect fieldOutline(0, 0, field_width, field_height);
-    rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
-    //create window for trackbars
-    imshow(windowName,cameraFeed);
+    if (PERF_MODE == GUI) {
+      // Show Field Outline
+      Rect fieldOutline(0, 0, field_width, field_height);
+      rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
+      //create window for trackbars
+      imshow(windowName,cameraFeed);
+    }
     
     /***********************Ros Publisher************************************/
 
