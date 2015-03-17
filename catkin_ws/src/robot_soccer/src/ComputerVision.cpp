@@ -449,10 +449,12 @@ void calibrateField(VideoCapture capture) {
 
 // Generates all the calibration prompts (field + ball + robots)
 void runFullCalibration(VideoCapture capture) {
+  restoreSettings();
   calibrateField(capture);
   ball.calibrateBall(capture);
   home1.calibrateRobot(capture);
   away1.calibrateRobot(capture);
+  saveSettings();
 }
 
 // Special function for both getting the next image and reading the timestamp

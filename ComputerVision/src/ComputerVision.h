@@ -47,7 +47,6 @@ typedef struct {
 #define HOME 1
 #define AWAY 2
 
-
 #define MIN_BUFFER_SIZE 3
 
 //----------------------------------------------------------------------------
