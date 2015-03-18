@@ -19,7 +19,7 @@ using namespace cv;
 
 // Change this parameter to determine which team we are on!
 // Either set it to HOME or AWAY
-int TEAM = AWAY;
+int TEAM = HOME;
 
 // Change this parameter to switch to performance, no GUI mode
 // Either set it to GUI or NO_GUI
@@ -82,12 +82,19 @@ Robot home1(HOME), home2(HOME);
 Robot away1(AWAY), away2(AWAY);
 Ball ball;
 
-// Double buffer reading
+// threading
 sem_t frameRawSema;
 std::queue<FrameRaw> frameRawFifo;
 sem_t frameMatSema;
 std::queue<FrameMat> frameMatFifo;
-
+Mat cameraFeed;
+Mat HSV;
+sem_t trackBallBegin;
+sem_t trackHome1Begin;
+sem_t trackAway1Begin;
+sem_t trackBallEnd;
+sem_t trackHome1End;
+sem_t trackAway1End;
 
 // Saves all of the pertinent calibration settings to human-readable file
 void saveSettings() {
@@ -371,12 +378,6 @@ void calibrateField(VideoCapture capture) {
   int field_origin_x;
   int field_origin_y;
 
-  // Set Initial Field Values
-  field_center_x = 590;
-  field_center_y = 410;
-  field_width = 1074;
-  field_height = 780;
-
   //create window for trackbars
   namedWindow(trackbarWindowName,0);
 
@@ -518,7 +519,7 @@ void * parserThread(void * notUsed){
       sem_post(&frameRawSema);
     } 
     else {
-      printf("frame dropped (Capture): %u.%09u\n",frame.timestamp.sec,frame.timestamp.nsec);
+      //printf("frame dropped (Capture): %u.%09u\n",frame.timestamp.sec,frame.timestamp.nsec);
     }
   } while (1);
   return NULL;
@@ -540,29 +541,72 @@ void * processorThread(void * notUsed){
       frameMat.image = imdecode(frameRaw.image, CV_LOAD_IMAGE_COLOR);
 
       undistortImage(frameMat.image);
+      
+      int field_origin_x;
+      int field_origin_y;
+      
+      //convert frame from BGR to HSV colorspace
+      field_origin_x = field_center_x - (field_width/2);
+      field_origin_y = field_center_y - (field_height/2);
+      Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
+      frameMat.image = frameMat.image(myROI);
+
+      cvtColor(frameMat.image,frameMat.HSV,COLOR_BGR2HSV);
+
       frameMatFifo.push(frameMat);
       sem_post(&frameMatSema);
     } 
     else {
-      printf("frame dropped (Process): %u.%09u\n",frameRaw.timestamp.sec,frameRaw.timestamp.nsec);
+      //printf("frame dropped (Process): %u.%09u\n",frameRaw.timestamp.sec,frameRaw.timestamp.nsec);
     }
   }
   return NULL;
+}
+
+// Track Ball
+void * ballThread(void * notUsed) {
+    Mat threshold;
+    while(1) {
+      sem_wait(&trackBallBegin);
+      inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
+      ball.trackFilteredBall(threshold,HSV,cameraFeed);
+      //printf("ball tracked");
+      sem_post(&trackBallEnd);
+    }
+}
+
+// Track home1
+void * home1Thread(void * notUsed) {
+    Mat threshold;
+    while(1) {
+      sem_wait(&trackHome1Begin);
+      inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
+      home1.trackFilteredRobot(threshold,HSV,cameraFeed);
+      //printf("home1 tracked");
+      sem_post(&trackHome1End);
+    }
+}
+
+// Track away1
+void * away1Thread(void * notUsed) {
+    Mat threshold;
+    while(1) {
+      sem_wait(&trackAway1Begin);
+      inRange(HSV,away1.getHSVmin(),away1.getHSVmax(),threshold);
+      away1.trackFilteredRobot(threshold,HSV,cameraFeed);
+      //printf("Away1 tracked");
+      sem_post(&trackAway1End);
+    }
 }
 
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
 	bool calibrationMode = true;
 
-  int field_origin_x;
-  int field_origin_y;
-
 	//Matrix to store each frame of the webcam feed
-	Mat cameraFeed;
 	Mat threshold1; //threshold image of ball
 	Mat threshold2; //threshold image of robot
 	Mat threshold; //combined image
-	Mat HSV;
 	Mat bw; // black and white mat
   Mat BGR;// BGR mat
 
@@ -607,11 +651,24 @@ int main(int argc, char* argv[]) {
 
   pthread_t parser;
   pthread_t processor;
+  pthread_t ballT;
+  pthread_t away1T;
+  pthread_t home1T;
   sem_init(&frameRawSema,0,0);
   sem_init(&frameMatSema,0,0);
+  sem_init(&trackBallBegin,0,0);
+  sem_init(&trackHome1Begin,0,0);
+  sem_init(&trackAway1Begin,0,0);
+  sem_init(&trackBallEnd,0,0);
+  sem_init(&trackHome1End,0,0);
+  sem_init(&trackAway1End,0,0);
   pthread_create (&parser, NULL, parserThread, NULL);
   pthread_create (&processor, NULL, processorThread, NULL);
-
+  pthread_create (&ballT, NULL, ballThread, NULL);
+  pthread_create (&home1T, NULL, home1Thread, NULL);
+  pthread_create (&away1T, NULL, away1Thread, NULL);
+  
+  unsigned int printCounter = 0;
   while(ros::ok()) {
     sem_wait(&frameMatSema);
     FrameMat frame = frameMatFifo.front();
@@ -622,29 +679,16 @@ int main(int argc, char* argv[]) {
 	  ros::Time timestamp = frame.timestamp;
 	  //printf("%u.%09u\n",timestamp.sec,timestamp.nsec);
     cameraFeed = frame.image;
+    HSV = frame.HSV;
 
-    //convert frame from BGR to HSV colorspace
-    field_origin_x = field_center_x - (field_width/2);
-    field_origin_y = field_center_y - (field_height/2);
-    Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
-    cameraFeed = cameraFeed(myROI);
+    sem_post(&trackBallBegin);
+    sem_post(&trackHome1Begin);
+    sem_post(&trackAway1Begin);
+    sem_wait(&trackBallEnd);
+    sem_wait(&trackHome1End);
+    sem_wait(&trackAway1End);
 
-    cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
-
-    // Track Ball
-    inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
-    ball.trackFilteredBall(threshold,HSV,cameraFeed);
-
-    // Track Home 1
-    inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
-    home1.trackFilteredRobot(threshold,HSV,cameraFeed);
-
-    // Track Away 1
-    inRange(HSV,away1.getHSVmin(),away1.getHSVmax(),threshold);
-    away1.trackFilteredRobot(threshold,HSV,cameraFeed);
-
-
-    if (PERF_MODE == GUI) {
+    if (PERF_MODE == GUI /* && !(printCounter%PRINT_FREQ) */) {
       // Show Field Outline
       Rect fieldOutline(0, 0, field_width, field_height);
       rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
@@ -667,8 +711,10 @@ int main(int argc, char* argv[]) {
     coordinates.away1_theta = away1.getAngle();    
     coordinates.header.stamp = timestamp;
     // Print values to ROS console
-    ROS_INFO("\n  timestamp: %u.%09u\n  x %d\n  y %d\n  theta %d\n", coordinates.header.stamp.sec, coordinates.header.stamp.nsec, coordinates.home1_x, coordinates.home1_y, coordinates.home1_theta);
-    ROS_INFO("\n  Ball_x: %d\n  Ball_y: %d\n", coordinates.ball_x, coordinates.ball_y);
+    if (!(printCounter%PRINT_FREQ)) {
+      ROS_INFO("\n  timestamp: %u.%09u\n  ", coordinates.header.stamp.sec, coordinates.header.stamp.nsec);
+      //ROS_INFO("\n  Ball_x: %d\n  Ball_y: %d\n", coordinates.ball_x, coordinates.ball_y);
+    }
     // Publish message
     publisher.publish(coordinates);
     // Waits the necessary time between message publications to meet the
@@ -681,6 +727,7 @@ int main(int argc, char* argv[]) {
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
 		waitKey(1);
+		printCounter++;
 	}
 	return 0;
 }

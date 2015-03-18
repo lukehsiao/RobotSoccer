@@ -33,6 +33,7 @@ typedef struct {
 typedef struct {
   ros::Time timestamp;
   cv::Mat image;
+  cv::Mat HSV;
 } FrameMat;
 
 #define PI 3.14159265
@@ -50,6 +51,7 @@ typedef struct {
 #define NO_GUI 2
 
 #define MIN_BUFFER_SIZE 3
+#define PRINT_FREQ 30
 
 //----------------------------------------------------------------------------
 // Extern variables to share between files

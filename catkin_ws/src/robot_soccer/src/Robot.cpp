@@ -206,12 +206,12 @@ void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
     }
 
     // Correct angle to the Robot's X-axis
-    if (intAngle > 90) {
-      intAngle = intAngle - 90;
-    }
-    else {
-      intAngle = 270 + intAngle;
-    }
+    //if (intAngle > 90) {
+    //  intAngle = intAngle - 90;
+    //}
+    //else {
+    //  intAngle = 270 + intAngle;
+    //}
 
     Point fieldPosition = convertCoordinates(Point((int)centerPoints[c1].x,
                                                    (int)centerPoints[c1].y));
