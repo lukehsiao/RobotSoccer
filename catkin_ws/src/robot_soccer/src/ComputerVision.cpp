@@ -65,11 +65,11 @@ const string windowName3 = "After Morphological Operations";
 const string trackbarWindowName = "Trackbars";
 
 // Camera Calibration Data
-double dist_coeff[5][1] = {  {-0.43},
-                             {0.23},
-                             {-0.008},
-                             {-0.008},
-                             {-0.07}
+double dist_coeff[5][1] = {  {-0.3647790},
+                             {0.184763},
+                             {0.003989429},
+                             {-0.0003392181},
+                             {-0.06141144}
                            };
 
 //double dist_coeff[5][1] = {  {-0.43},
@@ -86,8 +86,8 @@ double dist_coeff[5][1] = {  {-0.43},
 //                          };
 
 
-double cam_matrix[3][3] = {  {530,  0.0,  320},
-                             {0.0,  530,  240},
+double cam_matrix[3][3] = {  {513,  0.0,  315.6},
+                             {0.0,  513.94,  266.72},
                              {0.0,  0.0,  1.0}
                           };                          
                           
@@ -626,13 +626,7 @@ int main(int argc, char* argv[]) {
 	Mat threshold; //combined image
 	Mat bw; // black and white mat
   Mat BGR;// BGR mat
-
-  // Set Initial Field Values
-  field_center_x = 590;
-  field_center_y = 410;
-  field_width = 1074;
-  field_height = 780;
-
+  
 	//video capture object to acquire webcam feed
 	const string videoStreamAddress = "http://192.168.1.90/mjpg/video.mjpg";
 
