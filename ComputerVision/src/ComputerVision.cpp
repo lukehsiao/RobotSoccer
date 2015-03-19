@@ -639,9 +639,15 @@ int main(int argc, char* argv[]) {
     //create window for trackbars
     imshow(windowName,cameraFeed);
 
-		//delay 30ms so that screen can refresh.
-		//image will not appear without this waitKey() command
-		waitKey(1);
+    // Wait to check if user wants to switch Home/Away
+    char pressedKey;
+    pressedKey = cvWaitKey(5); // Wait for user to press 'Enter'
+    if (pressedKey == 'a') {
+      TEAM = AWAY;
+    }
+    else if (pressedKey == 'h') {
+      TEAM = HOME;
+    }
 	}
 	return 0;
 }
