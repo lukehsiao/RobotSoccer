@@ -41,8 +41,8 @@ int field_height_min = 0;
 int field_width_min = 0;
 int field_center_x_min = 0;
 int field_center_y_min = 0;
-int field_height_max = FRAME_HEIGHT + 100;
-int field_width_max = FRAME_WIDTH + 100;
+int field_height_max = FRAME_HEIGHT + 300;
+int field_width_max = FRAME_WIDTH + 300;
 int field_center_x_max = FRAME_WIDTH;
 int field_center_y_max = FRAME_HEIGHT;
 
@@ -61,16 +61,16 @@ const string windowName3 = "After Morphological Operations";
 const string trackbarWindowName = "Trackbars";
 
 // Camera Calibration Data
-double dist_coeff[5][1] = {  {-0.43},
-                             {0.23},
-                             {-0.004},
-                             {-0.005},
-                             {-0.07}
+double dist_coeff[5][1] = {  {-0.3647790},
+                             {0.184763},
+                             {0.003989429},
+                             {-0.0003392181},
+                             {-0.06141144}
                            };
 
 
-double cam_matrix[3][3] = {  {846,  0.0,  639.5},
-                             {0.0,  849,  436.0},
+double cam_matrix[3][3] = {  {513,  0.0,  315.6},
+                             {0.0,  513.94,  266.72},
                              {0.0,  0.0,  1.0}
                           };
 
@@ -284,10 +284,12 @@ void undistortImage(Mat &source) {
   Mat cameraMatrix = Mat(3, 3, CV_64F, cam_matrix); // read in 64-bit doubles
   Mat distCoeffs = Mat(5, 1, CV_64F, dist_coeff);
 
-  double y_shift = 70;
-  int enlargement = 100;
+  double y_shift = 60;
+  double x_shift = 70;
+  int enlargement = 185;
   Size imageSize = source.size();
   imageSize.height += enlargement;
+  imageSize.width += enlargement;
   Mat temp = source.clone();
 
   Mat newCameraMatrix = cameraMatrix.clone();
@@ -295,6 +297,7 @@ void undistortImage(Mat &source) {
   // Adjust the position of the newCameraMatrix
   // at() is a templated function so <double> is necessary
   newCameraMatrix.at<double>(1,2) += y_shift; //shift the image down
+  newCameraMatrix.at<double>(0,2) += x_shift; //shift the image right
 
   Mat map1;
   Mat map2;
@@ -302,6 +305,8 @@ void undistortImage(Mat &source) {
 
   remap(temp, source, map1, map2, INTER_LINEAR);
 }
+
+
 
 void createHSVTrackbars() {
 	//create window for trackbars
