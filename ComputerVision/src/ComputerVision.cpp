@@ -307,7 +307,6 @@ void undistortImage(Mat &source) {
 }
 
 
-
 void createHSVTrackbars() {
 	//create window for trackbars
 	namedWindow(trackbarWindowName,0);
@@ -406,6 +405,16 @@ void calibrateField(VideoCapture capture) {
     field_origin_y = field_center_y - (field_height/2);
 
     Rect fieldOutline(field_origin_x, field_origin_y, field_width, field_height);
+
+    // Draw centering lines
+    Point top_mid(field_center_x, field_origin_y);
+    Point bot_mid(field_center_x, field_origin_y+field_height);
+    Point left_mid(field_origin_x, field_center_y);
+    Point right_mid(field_origin_x+field_width, field_center_y);
+    line(cameraFeed,top_mid, bot_mid, Scalar(200,200,200), 1, 8, 0);
+    line(cameraFeed,left_mid, right_mid, Scalar(200,200,200), 1, 8, 0);
+
+    // Draw outline
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
     imshow(windowName,cameraFeed);
 
