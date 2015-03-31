@@ -40,7 +40,7 @@ void Robot::drawRobot(Mat &frame) {
   int real_y = this->get_y_pos();
 
   // TODO there may be some error in this value to do compensating for the noise
-  circle(frame,cv::Point(x,y),10, Scalar(0,0,255));
+  circle(frame,cv::Point(x,y),7, Scalar(0,0,255));
   putText(frame,"(" + intToString(real_x)+ "," + intToString(real_y) + ")",
           Point(x,y+20),1,1,Scalar(0,255,0));
   putText(frame, "Robot", Point(x+17,y+35),1,1,Scalar(0,255,0));
@@ -187,10 +187,10 @@ void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
     }
 
     // Mark the bigger circle
-    circle(cameraFeed, centerPoints[c1], 9, Scalar(255,0,0), -1, 8, 0);
+    circle(cameraFeed, centerPoints[c1], 6, Scalar(255,0,0), -1, 8, 0);
 
     //Draw line between centers
-    line(cameraFeed, centerPoints[c1], centerPoints[c2], Scalar(0,0,255), 4, 8, 0);
+    line(cameraFeed, centerPoints[c1], centerPoints[c2], Scalar(0,0,255), 2, 8, 0);
 
     //Calculate the angle
     float angle = (atan2(centerPoints[c2].y - centerPoints[c1].y,
@@ -213,8 +213,17 @@ void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
     //  intAngle = 270 + intAngle;
     //}
 
-    Point fieldPosition = convertCoordinates(Point((int)centerPoints[c1].x,
-                                                   (int)centerPoints[c1].y));
+    // Center the points of the robot
+    int real_center_x;
+    int real_center_y;
+
+    real_center_x = (int)(centerPoints[c1].x + centerPoints[c2].x)/2;
+    real_center_y = (int)(centerPoints[c1].y + centerPoints[c2].y)/2;
+
+    circle(cameraFeed, Point(real_center_x, real_center_y), 3, Scalar(255,255,255), -1, 8, 0);
+
+    Point fieldPosition = convertCoordinates(Point(real_center_x,
+                                                   real_center_y));
 
     // Assign Robot it's variables based on team
     if (TEAM == HOME) {

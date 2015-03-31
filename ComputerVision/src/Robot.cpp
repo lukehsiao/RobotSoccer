@@ -205,16 +205,25 @@ void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
       intAngle = 360-intAngle;
     }
 
-    // Correct angle to the Robot's X-axis
-    if (intAngle > 90) {
-      intAngle = intAngle - 90;
-    }
-    else {
-      intAngle = 270 + intAngle;
-    }
+//    // Correct angle to the Robot's X-axis
+//    if (intAngle > 90) {
+//      intAngle = intAngle - 90;
+//    }
+//    else {
+//      intAngle = 270 + intAngle;
+//    }
 
-    Point fieldPosition = convertCoordinates(Point((int)centerPoints[c1].x,
-                                                   (int)centerPoints[c1].y));
+    // Center the points of the robot
+    int real_center_x;
+    int real_center_y;
+
+    real_center_x = (int)(centerPoints[c1].x + centerPoints[c2].x)/2;
+    real_center_y = (int)(centerPoints[c1].y + centerPoints[c2].y)/2;
+
+    circle(cameraFeed, Point(real_center_x, real_center_y), 3, Scalar(255,0,0), -1, 8, 0);
+
+    Point fieldPosition = convertCoordinates(Point(real_center_x,
+                                                   real_center_y));
 
     // Assign Robot it's variables based on team
     if (TEAM == HOME) {
