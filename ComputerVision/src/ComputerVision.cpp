@@ -573,12 +573,6 @@ int main(int argc, char* argv[]) {
 	Mat bw; // black and white mat
   Mat BGR;// BGR mat
 
-  // Set Initial Field Values
-  field_center_x = 590;
-  field_center_y = 410;
-  field_width = 1074;
-  field_height = 780;
-
 	//video capture object to acquire webcam feed
 	const string videoStreamAddress = "http://192.168.1.90/mjpg/video.mjpg";
 
@@ -645,6 +639,14 @@ int main(int argc, char* argv[]) {
     // Show Field Outline
     Rect fieldOutline(0, 0, field_width, field_height);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
+    // Draw centering lines
+    Point top_mid(field_width/2, 0);
+    Point bot_mid(field_width/2, field_height);
+    Point left_mid(0, field_height/2);
+    Point right_mid(field_width, field_height/2);
+    line(cameraFeed,top_mid, bot_mid, Scalar(200,200,200), 1, 8, 0);
+    line(cameraFeed,left_mid, right_mid, Scalar(200,200,200), 1, 8, 0);
+
     //create window for trackbars
     imshow(windowName,cameraFeed);
 
