@@ -3,8 +3,7 @@
 Team: Vektor Krum<br>
 Version: 0.0.1<br>
 Wiki Homepage: [Robot Soccer Wiki](https://github.com/lukehsiao/RobotSoccer/wiki)<br>
-Landing Page: [Robot Soccer Homepage](http://lukehsiao.github.io/RobotSoccer/)<br>
-        
+
 ### What is this repository for? ###
 This repository stores source code for all of the elements involved in creating autonomous robots: computer vision, motion, AI, etc. We have also relied on this repository to track development issues and project management.
 
