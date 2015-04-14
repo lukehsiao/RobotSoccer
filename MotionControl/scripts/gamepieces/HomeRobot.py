@@ -94,8 +94,12 @@ class HomeRobot:
     
     # case where request is before our known history
     if timestamp < self.previousLocation.timestamp:
+      location = copy.deepcopy(self.previousLocation)
       self.postBusy()
-      raise HomeError("Request for location before beginning of history")
+      #nothing has changed from this timestamp and the beginning of history.
+      location.timestamp = timestamp
+      return location
+#      raise HomeError("Request for location before beginning of history")
     
     # case where timestamp is between beginning of history and first command.
     if len(self.commandQueue) == 0 or self.commandQueue[0].timestamp >= timestamp:
@@ -144,8 +148,10 @@ class HomeRobot:
     
     # case where command is before beginning of history
     if command.timestamp < self.previousLocation.timestamp:
-      self.postBusy()
-      raise HomeError('Recieved command out of order.')
+      if len(self.commandQueue) != 0:
+        self.postBusy()
+        return 
+        #raise HomeError('Recieved command out of order.')
     
     # case of kill command being sent; throw out if command queue is empty or
     # if last command sent was a kill command too

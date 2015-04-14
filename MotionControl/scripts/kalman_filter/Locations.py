@@ -39,7 +39,7 @@ class Locations:
         angleField = math.atan2(robot_y, robot_x)
         mag = math.sqrt(robot_x**2+robot_y**2)
         if mag == 0:
-          angleCamera = 0
+          return robot_x, robot_y
         else:
           angleCamera = math.atan(HEIGHT_CAMERA/mag)
         offset = HEIGHT_ROBOT / math.tan(angleCamera)

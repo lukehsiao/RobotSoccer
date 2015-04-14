@@ -89,9 +89,11 @@ class MotionSkills:
         return Command(0, 0, speed, 0, runTime)
     
     @staticmethod
-    def getPointBehindBall(ball):
+    def getPointBehindBall(ball, home_goal = None):
+        if home_goal == None:
+          home_goal = HOME_GOAL
         ballPoint = ball.point
-        angle = MotionSkills.angleBetweenPoints(HOME_GOAL, ballPoint)
+        angle = MotionSkills.angleBetweenPoints(home_goal, ballPoint)
         x = ballPoint.x + (DIS_BEHIND_BALL * math.cos(angle))
         y = ballPoint.y + (DIS_BEHIND_BALL * math.sin(angle))
         #print "(%f, %f)" % (x, y)
