@@ -8,7 +8,8 @@
 #ifndef OBJECT_H_
 #define OBJECT_H_
 
-#include <opencv/cv.h>
+#include "ComputerVision.h"
+
 
 class Object {
   public:
@@ -37,6 +38,8 @@ class Object {
     cv::Scalar getHSVmax();
     void setHSVmax(cv::Scalar max);
 
+
+
   protected:
     int x_pos, y_pos;
     int img_x, img_y;
@@ -45,6 +48,7 @@ class Object {
     int old_x_pos, old_y_pos;
 
     cv::Scalar HSVmin, HSVmax;
+
 };
 
 #endif /* OBJECT_H_ */

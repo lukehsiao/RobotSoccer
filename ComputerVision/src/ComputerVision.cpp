@@ -9,39 +9,17 @@
 // robot's orientations.
 //============================================================================
 
-#include <sstream>
-#include <string>
-#include <iostream>
-#include <fstream>
-#include <stdio.h>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
-#include <opencv/cv.h>
+
+#include "ComputerVision.h"
 #include "Ball.h"
 #include "Robot.h"
 #include "Object.h"
 
-typedef struct {
-  unsigned int sec;
-  unsigned int nsec;
-} Time;
-
-#define PI 3.14159265
-#define MIN_CHANGE 5
-#define MAX_CHANGE 1000
-
-//default capture width and height
-#define FRAME_WIDTH  1280
-#define FRAME_HEIGHT 720
-
-// Constants for determining field coordinate systems
-//#define FIELD_WIDTH 640// 790
-//#define FIELD_HEIGHT 400
-//#define FIELD_CENTER_X 320//455
-//#define FIELD_CENTER_Y 200//240
-
 using namespace cv;
+
+// Change this parameter to determine which team we are on!
+// Either set it to HOME or AWAY
+int TEAM = AWAY;
 
 // Field variables
 int field_width;
@@ -63,13 +41,13 @@ int field_height_min = 0;
 int field_width_min = 0;
 int field_center_x_min = 0;
 int field_center_y_min = 0;
-int field_height_max = FRAME_HEIGHT + 100;
-int field_width_max = FRAME_WIDTH + 100;
+int field_height_max = FRAME_HEIGHT + 300;
+int field_width_max = FRAME_WIDTH + 300;
 int field_center_x_max = FRAME_WIDTH;
 int field_center_y_max = FRAME_HEIGHT;
 
 //max number of objects to be detected in frame
-const int MAX_NUM_OBJECTS=50;
+const int MAX_NUM_OBJECTS = 50;
 
 //minimum and maximum object area
 const int MIN_OBJECT_AREA = 7*7;
@@ -83,18 +61,211 @@ const string windowName3 = "After Morphological Operations";
 const string trackbarWindowName = "Trackbars";
 
 // Camera Calibration Data
-double dist_coeff[5][1] = {  {-0.43},
-                             {0.23},
-                             {-0.004},
-                             {-0.005},
-                             {-0.07}
+double dist_coeff[5][1] = {  {-0.3647790},
+                             {0.184763},
+                             {0.003989429},
+                             {-0.0003392181},
+                             {-0.06141144}
                            };
 
 
-double cam_matrix[3][3] = {  {846,  0.0,  639.5},
-                             {0.0,  849,  436.0},
+double cam_matrix[3][3] = {  {513,  0.0,  315.6},
+                             {0.0,  513.94,  266.72},
                              {0.0,  0.0,  1.0}
                           };
+
+// Declaration of the 5 objects
+Robot home1(HOME), home2(HOME);
+Robot away1(AWAY), away2(AWAY);
+Ball ball;
+
+// Globals used for processing threads
+sem_t frameRawSema;
+std::queue<FrameRaw> frameRawFifo;
+sem_t frameMatSema;
+std::queue<FrameMat> frameMatFifo;
+
+// Saves all of the pertinent calibration settings to human-readable file
+void saveSettings() {
+  // Open file
+  std::ofstream of("settings.data");
+
+  if (!of.is_open()) {
+    printf("\n\n\nERROR OPENING SETTINGS FILE!\n\n\n");
+    return;
+  }
+
+  const string h1 = "Home1";
+  const string h2 = "Home2";
+  const string a1 = "Away1";
+  const string a2 = "Away2";
+  const string b = "Ball";
+  const string f = "Field";
+  int tempH, tempS, tempV;
+
+  // Print human-readable header for settings file
+  of << "#############################################################" << "\n";
+  of << "# This settings file contains the color calibration settings" << "\n";
+  of << "# Format: " << "\n";
+  of << "# [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]" << "\n";
+  of << "# [Ball] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]" << "\n";
+  of << "# [Field] [x_center_pos] [y_center_pos] [width] [height]" << "\n";
+  of << "#############################################################" << "\n";
+  of << "\n\n";
+
+  // Robot Save format:
+  // [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]
+  tempH = home1.getHSVmin().val[0];
+  tempS = home1.getHSVmin().val[1];
+  tempV = home1.getHSVmin().val[2];
+  of << h1 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
+  tempH = home1.getHSVmax().val[0];
+  tempS = home1.getHSVmax().val[1];
+  tempV = home1.getHSVmax().val[2];
+  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+
+  tempH = home2.getHSVmin().val[0];
+  tempS = home2.getHSVmin().val[1];
+  tempV = home2.getHSVmin().val[2];
+  of << h2 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
+  tempH = home2.getHSVmax().val[0];
+  tempS = home2.getHSVmax().val[1];
+  tempV = home2.getHSVmax().val[2];
+  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+
+  tempH = away1.getHSVmin().val[0];
+  tempS = away1.getHSVmin().val[1];
+  tempV = away1.getHSVmin().val[2];
+  of << a1 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
+  tempH = away1.getHSVmax().val[0];
+  tempS = away1.getHSVmax().val[1];
+  tempV = away1.getHSVmax().val[2];
+  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+
+  tempH = away2.getHSVmin().val[0];
+  tempS = away2.getHSVmin().val[1];
+  tempV = away2.getHSVmin().val[2];
+  of << a2 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
+  tempH = away2.getHSVmax().val[0];
+  tempS = away2.getHSVmax().val[1];
+  tempV = away2.getHSVmax().val[2];
+  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+
+
+  // Ball Save format:
+  // [Ball] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]
+  tempH = ball.getHSVmin().val[0];
+  tempS = ball.getHSVmin().val[1];
+  tempV = ball.getHSVmin().val[2];
+  of << b << " " <<  tempH << " " << tempS << " " <<  tempV;
+  tempH = ball.getHSVmax().val[0];
+  tempS = ball.getHSVmax().val[1];
+  tempV = ball.getHSVmax().val[2];
+  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+
+  // Field Save format:
+  // [Field] [x_pos] [y_pos] [width] [height]
+  of << f << " " << field_center_x << " " << field_center_y;
+  of << " " << field_width << " " <<  field_height << "\n";
+
+  // close file
+  of.close();
+  printf("Settings Saved!\n");
+}
+
+// Reads in saved settings from settings.data and stores them in objects
+void restoreSettings() {
+  const string h1 = "Home1";
+  const string h2 = "Home2";
+  const string a1 = "Away1";
+  const string a2 = "Away2";
+  const string b = "Ball";
+  const string f = "Field";
+  int tempH, tempS, tempV;
+
+  std::stringstream ss;
+  std::ifstream in("settings.data");
+  if (!in.good()) {
+    printf("\n\n\nERROR, Couldn't open file\n\n\n");
+    return;
+  }
+
+  // char line[MAX_CHARS];
+  std::string ID;
+  std::string line;
+
+  // Parse File line by line
+  while(getline(in, line)) {
+    if (line.c_str()[0] == '#') {
+      continue; //skip comments
+    }
+    ss.str(line);
+    ss >> ID;
+    if (ID == h1) {
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      home1.setHSVmin(Scalar(tempH, tempS, tempV));
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      home1.setHSVmax(Scalar(tempH, tempS, tempV));
+    }
+    else if (ID == h2) {
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      home2.setHSVmin(Scalar(tempH, tempS, tempV));
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      home2.setHSVmax(Scalar(tempH, tempS, tempV));
+    }
+    else if (ID == a1) {
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      away1.setHSVmin(Scalar(tempH, tempS, tempV));
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      away1.setHSVmax(Scalar(tempH, tempS, tempV));
+    }
+    else if (ID == a2) {
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      away2.setHSVmin(Scalar(tempH, tempS, tempV));
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      away2.setHSVmax(Scalar(tempH, tempS, tempV));
+    }
+    else if (ID == b) {
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      ball.setHSVmin(Scalar(tempH, tempS, tempV));
+      ss >> tempH;
+      ss >> tempS;
+      ss >> tempV;
+      ball.setHSVmax(Scalar(tempH, tempS, tempV));
+    }
+    else if (ID == f) {
+      ss >> field_center_x;
+      ss >> field_center_y;
+      ss >> field_width;
+      ss >> field_height;
+    }
+    ss.clear();
+  }
+  in.close();
+  printf("Settings Restored!\n");
+}
+
+//-----------------------------------------------------------------------------
+// Utility Functions Shared by Classes =======================================
+//-----------------------------------------------------------------------------
 
 // This function is called whenever a trackbar changes
 void on_trackbar( int, void* ) {
@@ -113,10 +284,12 @@ void undistortImage(Mat &source) {
   Mat cameraMatrix = Mat(3, 3, CV_64F, cam_matrix); // read in 64-bit doubles
   Mat distCoeffs = Mat(5, 1, CV_64F, dist_coeff);
 
-  double y_shift = 70;
-  int enlargement = 100;
+  double y_shift = 60;
+  double x_shift = 70;
+  int enlargement = 185;
   Size imageSize = source.size();
   imageSize.height += enlargement;
+  imageSize.width += enlargement;
   Mat temp = source.clone();
 
   Mat newCameraMatrix = cameraMatrix.clone();
@@ -124,6 +297,7 @@ void undistortImage(Mat &source) {
   // Adjust the position of the newCameraMatrix
   // at() is a templated function so <double> is necessary
   newCameraMatrix.at<double>(1,2) += y_shift; //shift the image down
+  newCameraMatrix.at<double>(0,2) += x_shift; //shift the image right
 
   Mat map1;
   Mat map2;
@@ -132,13 +306,14 @@ void undistortImage(Mat &source) {
   remap(temp, source, map1, map2, INTER_LINEAR);
 }
 
+
 void createHSVTrackbars() {
 	//create window for trackbars
 	namedWindow(trackbarWindowName,0);
 
 	//create trackbars and insert them into window
 	//3 parameters are: the address of the variable that is changing when the trackbar is moved(eg.H_LOW),
-	//the max value the trackbar can move (eg. H_HIGH), 
+	//the max value the trackbar can move (eg. H_HIGH),
 	//and the function that is called whenever the trackbar is moved(eg. on_trackbar)
 	createTrackbar( "H_MIN", trackbarWindowName, &H_MIN, H_MAX, on_trackbar );
 	createTrackbar( "H_MAX", trackbarWindowName, &H_MAX, H_MAX, on_trackbar );
@@ -166,51 +341,6 @@ Point convertCoordinates(Point imageCoordinates) {
   return result;
 }
 
-// Places a small circle on the object
-void drawObject(int x,int y,Mat &frame) {
-	circle(frame,cv::Point(x,y),10,cv::Scalar(0,0,255));
-	putText(frame,intToString(x)+ " , " + intToString(y),
-	        Point(x,y+20),1,1,Scalar(0,255,0));
-}
-
-void drawBall(Ball soccerBall, Mat &frame) {
-  int x = soccerBall.get_img_x();
-  int y = soccerBall.get_img_y();
-
-  int real_x = soccerBall.get_x_pos();
-  int real_y = soccerBall.get_y_pos();
-  circle(frame,cv::Point(x,y),10,cv::Scalar(0,0,255));
-  putText(frame,"(" + intToString(real_x)+ "," + intToString(real_y) + ")",
-          Point(x,y+20),1,1,Scalar(0,255,0));
-  putText(frame, "Ball", Point(x+25,y+35),1,1,Scalar(0,255,0));
-}
-
-void drawRobot(Robot newRobot, Mat &frame) {
-  int x = newRobot.get_img_x();
-  int y = newRobot.get_img_y();
-  int team = newRobot.getTeam();
-  int angle = newRobot.getAngle();
-
-  int real_x = newRobot.get_x_pos();
-  int real_y = newRobot.get_y_pos();
-
-  // TODO there may be some error in this value to do compensating for the noise
-  circle(frame,cv::Point(x,y),10, Scalar(0,0,255));
-  putText(frame,"(" + intToString(real_x)+ "," + intToString(real_y) + ")",
-          Point(x,y+20),1,1,Scalar(0,255,0));
-  putText(frame, "Robot", Point(x+17,y+35),1,1,Scalar(0,255,0));
-  putText(frame, "Team " + intToString(team), Point(x+17,y+50),1,1,Scalar(0,255,0));
-  putText(frame, "Angle: " + intToString(angle), Point(x+17,y+65),1,1,Scalar(0,255,0));
-}
-
-// Draws all robot objects that are found
-void drawAllRobots(vector<Robot> robots_to_draw, Mat &frame) {
-  // Iterate through all found robots and draw them
-  for (unsigned i = 0; i < robots_to_draw.size(); i++) {
-    drawRobot(robots_to_draw.at(i), frame);
-  }
-}
-
 // This function reduces the noise of the image by eroding the image first
 // then dialating the remaining image to produce cleaner objects
 void morphOps(Mat &thresh) {
@@ -232,378 +362,15 @@ void morphOps(Mat &thresh) {
   dilate(thresh,thresh,dilateElement);
 }
 
-// Function specific for tracking robots. Will calculate the center of the robot as
-// well as the it's angle in relation to the horizontal.
-void trackFilteredRobot(Robot &robot, Mat threshold, Mat HSV, Mat &cameraFeed) {
-  Mat temp;
-  threshold.copyTo(temp);
-
-  int c1 = 0, c2=1;   // c1 = Center Point of Big Circle and c2 = Center Point of Small Circle
-
-  //these two vectors needed for output of findContours
-  vector< vector<Point> > contours;
-  vector<Vec4i> hierarchy;
-
-  //find contours of filtered image using openCV findContours function
-  findContours(temp,contours,hierarchy,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE );
-
-  //use moments method to find our filtered object
-  //TODO(lukehsiao) This WILL break if there are more than 2 objects found. Segmentation has to be really good.
-  if (contours.size() == 2) {
-
-    // Identify the bigger object
-    if (contourArea(contours[0]) < contourArea(contours[1])) {
-      c1 = 1;
-      c2 = 0;
-    }
-    else {
-      c1 = 0;
-      c2 = 1;
-    }
-
-    // Get momentsf
-    vector<Moments> robotMoments(contours.size());
-    for (unsigned i = 0; i < contours.size(); i++) {
-      robotMoments[i] = moments(contours[i], false);
-    }
-
-    // Find centers
-    vector<Point2f> centerPoints(contours.size());
-    for (unsigned i = 0; i < contours.size(); i++) {
-      centerPoints[i] = Point2f(robotMoments[i].m10/robotMoments[i].m00,
-                                robotMoments[i].m01/robotMoments[i].m00);
-    }
-
-    // Mark the bigger circle
-    circle(cameraFeed, centerPoints[c1], 9, Scalar(255,0,0), -1, 8, 0);
-
-    //Draw line between centers
-    line(cameraFeed, centerPoints[c1], centerPoints[c2], Scalar(0,0,255), 4, 8, 0);
-
-    //Calculate the angle
-    float angle = (atan2(centerPoints[c2].y - centerPoints[c1].y,
-                         centerPoints[c2].x - centerPoints[c1].x))*(180/PI);
-
-    //Convert to int
-    int intAngle = (int) angle;
-    if (intAngle <= 0) {
-      intAngle = intAngle * (-1); // make positive again
-    }
-    else {
-      intAngle = 360-intAngle;
-    }
-
-    // Correct angle to the Robot's X-axis
-    if (intAngle > 90) {
-      intAngle = intAngle - 90;
-    }
-    else {
-      intAngle = 360 - intAngle;
-    }
-
-
-    // TODO Filtering bad data (if the change in xpos or ypos is too large, ignore data
-    // Set Robot variables
-
-    if (abs(intAngle - robot.getOldAngle()) > 5) {
-      robot.setAngle(intAngle);
-    }
-
-    Point fieldPosition = convertCoordinates(Point((int)centerPoints[c1].x,
-                                                   (int)centerPoints[c1].y));
-    if (abs(fieldPosition.x - robot.get_x_pos()) > MIN_CHANGE &&
-        abs(fieldPosition.x - robot.get_x_pos()) < MAX_CHANGE) {
-      robot.set_x_pos(fieldPosition.x);
-      robot.set_img_x((int)centerPoints[c1].x);
-    }
-    if (abs(fieldPosition.y - robot.get_y_pos()) > MIN_CHANGE &&
-        abs(fieldPosition.y - robot.get_y_pos()) < MAX_CHANGE) {
-      robot.set_y_pos(fieldPosition.y);
-      robot.set_img_y((int)centerPoints[c1].y);
-    }
-
-    drawRobot(robot, cameraFeed);
-  }
-}
-
-// Finds the contours (outlines) of the now filtered image and determine's its
-// center by examining its moments.
-void trackFilteredBall(Ball &ball, Mat threshold, Mat HSV, Mat &cameraFeed) {
-
-  Mat temp;
-  threshold.copyTo(temp);
-  int largest_area = 0;
-  int largest_contour_index = 0;
-
-  //these two vectors needed for output of findContours
-  vector< vector<Point> > contours;
-  vector<Vec4i> hierarchy;
-
-  //find contours of filtered image using openCV findContours function
-  findContours(temp,contours,hierarchy,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE);
-
-  //use moments method to find our filtered object
-  //double refArea = 0;
-  bool objectFound = false;
-
-  if (contours.size() > 0) {
-    int numObjects = hierarchy.size();
-    //if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
-    if(numObjects<MAX_NUM_OBJECTS){
-
-      // Iterate over all contours to find the largest
-      for (unsigned i = 0; i < contours.size(); i++) {
-        double tempArea = contourArea(contours[i], false); // Find area of each contour
-        if (tempArea > largest_area) {
-          largest_area = tempArea;
-          largest_contour_index = i;
-        }
-      }
-
-      Moments moment = moments((Mat)contours[largest_contour_index]);
-
-      //if the area is less than 20 px by 20px then it is probably just noise
-      //if the area is the same as the 3/2 of the image size, probably just a bad filter
-      //we only want the object with the largest area so we safe a reference area each
-      //iteration and compare it to the area in the next iteration.
-      if(largest_area > MIN_OBJECT_AREA) {
-        Point fieldPosition = convertCoordinates(Point(moment.m10/moment.m00,
-                                                       moment.m01/moment.m00));
-
-        if (abs(ball.get_x_pos() - fieldPosition.x) > MIN_CHANGE) {
-          ball.set_x_pos(fieldPosition.x);
-          ball.set_img_x(moment.m10/moment.m00);
-        }
-
-        if (abs(ball.get_y_pos() - fieldPosition.y) > MIN_CHANGE) {
-          ball.set_y_pos(fieldPosition.y);
-          ball.set_img_y(moment.m01/moment.m00);
-        }
-
-        objectFound = true;
-
-      }
-      else {
-        objectFound = false;
-      }
-
-      //let user know you found an object
-      if(objectFound == true){
-        //draw object location on screen
-        drawBall(ball,cameraFeed);
-      }
-
-    }
-    else {
-      putText(cameraFeed,"TOO MUCH NOISE! ADJUST FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
-    }
-  }
-}
-
-// Generate prompts to calibrate colors for the Home1 robots
-void calibrateRobot(VideoCapture capture, Robot &robot) {
-  Mat cameraFeed;
-  Mat HSV;
-  Mat threshold;
-  int h_min;
-  int h_max;
-  int s_min;
-  int s_max;
-  int v_min;
-  int v_max;
-  int field_origin_x;
-  int field_origin_y;
-
-  //create trackbars
-  createHSVTrackbars();
-
-  // Set Trackbar intial values to near Red
-  setTrackbarPos( "H_MIN", trackbarWindowName, 0);
-  setTrackbarPos( "H_MAX", trackbarWindowName, 15);
-  setTrackbarPos( "S_MIN", trackbarWindowName, 0);
-  setTrackbarPos( "S_MAX", trackbarWindowName, 255);
-  setTrackbarPos( "V_MIN", trackbarWindowName, 195);
-  setTrackbarPos( "V_MAX", trackbarWindowName, 255);
-
-  // Wait forever until user sets the values
-   while (1) {
-      //store image to matrix
-      capture.read(cameraFeed);
-      undistortImage(cameraFeed);
-
-      //convert frame from BGR to HSV colorspace
-      field_origin_x = field_center_x - (field_width/2);
-      field_origin_y = field_center_y - (field_height/2);
-      Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
-      cameraFeed = cameraFeed(myROI);
-      cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
-
-      //if in calibration mode, we track objects based on the HSV slider values.
-      inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
-
-      // Erode, then dialate to get a cleaner image
-      morphOps(threshold);
-
-      h_min = getTrackbarPos( "H_MIN", trackbarWindowName);
-      h_max = getTrackbarPos( "H_MAX", trackbarWindowName);
-      s_min = getTrackbarPos( "S_MIN", trackbarWindowName);
-      s_max = getTrackbarPos( "S_MAX", trackbarWindowName);
-      v_min = getTrackbarPos( "V_MIN", trackbarWindowName);
-      v_max = getTrackbarPos( "V_MAX", trackbarWindowName);
-
-      Scalar hsv_min(h_min, s_min, v_min);
-      Scalar hsv_max(h_max, s_max, v_max);
-
-      robot.setHSVmin(hsv_min);
-      robot.setHSVmax(hsv_max);
-
-      trackFilteredRobot(robot,threshold,HSV,cameraFeed);
-
-      imshow(windowName2,threshold);
-      imshow(windowName,cameraFeed);
-
-      char pressedKey;
-      pressedKey = cvWaitKey(50); // Wait for user to press 'Enter'
-      if (pressedKey == '\n') {
-
-          Scalar hsv_min(h_min, s_min, v_min);
-          Scalar hsv_max(h_max, s_max, v_max);
-
-          robot.setHSVmin(hsv_min);
-          robot.setHSVmax(hsv_max);
-
-          printf("\n\nRobot HSV Values Saved!\n");
-          printf("h_min: %d\n", h_min);
-          printf("h_max: %d\n", h_max);
-          printf("s_min: %d\n", s_min);
-          printf("s_max: %d\n", s_max);
-          printf("v_min: %d\n", v_min);
-          printf("v_max: %d\n", v_max);
-
-          destroyAllWindows();
-
-          // Reset Globals
-          H_MIN = 0;
-          H_MAX = 256;
-          S_MIN = 0;
-          S_MAX = 256;
-          V_MIN = 0;
-          V_MAX = 256;
-
-          return;
-      }
-   }
-
-
-}
-
-// Generates prompts for calibration of the color ball
-void calibrateBall(VideoCapture capture, Ball &ball) {
-  Mat cameraFeed;
-  Mat HSV;
-  Mat threshold;
-  int h_min;
-  int h_max;
-  int s_min;
-  int s_max;
-  int v_min;
-  int v_max;
-  int field_origin_x;
-  int field_origin_y;
-
-  //create trackbars
-  createHSVTrackbars();
-
-  // Set Trackbar intial values to near Yellow
-  setTrackbarPos( "H_MIN", trackbarWindowName, 30);
-  setTrackbarPos( "H_MAX", trackbarWindowName, 65);
-  setTrackbarPos( "S_MIN", trackbarWindowName, 0);
-  setTrackbarPos( "S_MAX", trackbarWindowName, 255);
-  setTrackbarPos( "V_MIN", trackbarWindowName, 180);
-  setTrackbarPos( "V_MAX", trackbarWindowName, 255);
-
-  // Wait forever until user sets the values
-   while (1) {
-    //store image to matrix
-    capture.read(cameraFeed);
-    undistortImage(cameraFeed);
-
-    //convert frame from BGR to HSV colorspace
-    field_origin_x = field_center_x - (field_width/2);
-    field_origin_y = field_center_y - (field_height/2);
-    Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
-    cameraFeed = cameraFeed(myROI);
-    cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
-
-    //if in calibration mode, we track objects based on the HSV slider values.
-    inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
-
-    // Erode, then dialate to get a cleaner image
-    morphOps(threshold);
-
-
-
-    h_min = getTrackbarPos( "H_MIN", trackbarWindowName);
-    h_max = getTrackbarPos( "H_MAX", trackbarWindowName);
-    s_min = getTrackbarPos( "S_MIN", trackbarWindowName);
-    s_max = getTrackbarPos( "S_MAX", trackbarWindowName);
-    v_min = getTrackbarPos( "V_MIN", trackbarWindowName);
-    v_max = getTrackbarPos( "V_MAX", trackbarWindowName);
-
-    Scalar hsv_min(h_min, s_min, v_min);
-    Scalar hsv_max(h_max, s_max, v_max);
-
-    ball.setHSVmin(hsv_min);
-    ball.setHSVmax(hsv_max);
-
-    trackFilteredBall(ball,threshold,HSV,cameraFeed);
-
-    imshow(windowName,cameraFeed);
-    imshow(windowName2,threshold);
-
-    char pressedKey;
-    pressedKey = cvWaitKey(50); // Wait for user to press 'Enter'
-    if (pressedKey == '\n') {
-       Scalar hsv_min(h_min, s_min, v_min);
-       Scalar hsv_max(h_max, s_max, v_max);
-
-       ball.setHSVmin(hsv_min);
-       ball.setHSVmax(hsv_max);
-
-       printf("\n\nBall HSV Values Saved!\n");
-       printf("h_min: %d\n", h_min);
-       printf("h_max: %d\n", h_max);
-       printf("s_min: %d\n", s_min);
-       printf("s_max: %d\n", s_max);
-       printf("v_min: %d\n", v_min);
-       printf("v_max: %d\n", v_max);
-
-       destroyAllWindows();
-
-       // Reset Globals
-       H_MIN = 0;
-       H_MAX = 256;
-       S_MIN = 0;
-       S_MAX = 256;
-       V_MIN = 0;
-       V_MAX = 256;
-
-       return;
-     }
-   }
-}
+//-----------------------------------------------------------------------------
+//  End of Utility Functions Shared by Classes ===============================
+//-----------------------------------------------------------------------------
 
 // Generates prompts for field calibration of size/center
 void calibrateField(VideoCapture capture) {
   Mat cameraFeed;
   int field_origin_x;
   int field_origin_y;
-
-  // Set Initial Field Values
-  field_center_x = 590;
-  field_center_y = 410;
-  field_width = 1074;
-  field_height = 780;
 
   //create window for trackbars
   namedWindow(trackbarWindowName,0);
@@ -638,6 +405,16 @@ void calibrateField(VideoCapture capture) {
     field_origin_y = field_center_y - (field_height/2);
 
     Rect fieldOutline(field_origin_x, field_origin_y, field_width, field_height);
+
+    // Draw centering lines
+    Point top_mid(field_center_x, field_origin_y);
+    Point bot_mid(field_center_x, field_origin_y+field_height);
+    Point left_mid(field_origin_x, field_center_y);
+    Point right_mid(field_origin_x+field_width, field_center_y);
+    line(cameraFeed,top_mid, bot_mid, Scalar(200,200,200), 1, 8, 0);
+    line(cameraFeed,left_mid, right_mid, Scalar(200,200,200), 1, 8, 0);
+
+    // Draw outline
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
     imshow(windowName,cameraFeed);
 
@@ -661,48 +438,22 @@ void calibrateField(VideoCapture capture) {
 }
 
 // Generates all the calibration prompts (field + ball + robots)
-void runFullCalibration(VideoCapture capture, Ball &ball, Robot &Home1, Robot &Home2, Robot &Away1, Robot &Away2) {
+void runFullCalibration(VideoCapture capture) {
+  restoreSettings();
   calibrateField(capture);
-  calibrateBall(capture, ball);
-  calibrateRobot(capture, Home1);
-  calibrateRobot(capture, Away1);
+  ball.calibrateBall(capture);
+  home1.calibrateRobot(capture);
+  //Home2.calibrateRobot(capture);
+  away1.calibrateRobot(capture);
+  //Away2.calibrateRobot(capture);
+  saveSettings();
 }
 
-Mat OR(Mat mat1, Mat mat2){
-  Mat BGR_ball; //BGR image of ball;
-  Mat BGR_robot; //BGR image of robot;
-  Mat bw_ball; //Black and white image of ball
-  Mat bw_robot;
-  Mat mat3_bw;
-  Mat mat3_BGR;
-  Mat mat3_HSV;
-
-  cvtColor(mat1,BGR_ball,COLOR_HSV2BGR);
-  cvtColor(BGR_ball,bw_ball,COLOR_BGR2GRAY);
-  cvtColor(mat2,BGR_robot,COLOR_HSV2BGR);
-  cvtColor(BGR_robot,bw_robot,COLOR_BGR2GRAY);
-  mat3_bw=bw_ball;
-
-  int col=mat1.cols;
-  int row=mat1.rows;
-
-  for (int i=0; i<col; i++)
-  {
-    for (int j=0; j<row; j++)
-    {
-      mat3_bw.at<uchar>(i,j)=bw_ball.at<uchar>(i,j)+bw_robot.at<uchar>(i,j);  //assume white=255,black=0;
-      if (mat3_bw.at<uchar>(i,j)>255)                     //b+b=0=b; w+b=255=w; w+w=510,over!
-        mat3_bw.at<uchar>(i,j)=255;
-    }// not sure is 'MAT(i,j)' the right way to
-  }
-  cvtColor(mat3_bw,mat3_BGR,COLOR_GRAY2BGR);
-  cvtColor(mat3_BGR,mat3_HSV,COLOR_BGR2HSV);
-  printf("\n\nYES!!!\n");
-  return mat3_HSV;
-}
-
+// Special function for both getting the next image and reading the timestamp
+// from the IP camera. Currently NOT very optimized for performance.
 Time getNextImage(std::ifstream & myFile, std::vector<char> & imageArray) {
   imageArray.clear();
+  imageArray.reserve(1024*64);
   char buffer[4];
   Time timestamp;
   bool foundImage = false;
@@ -757,6 +508,55 @@ Time getNextImage(std::ifstream & myFile, std::vector<char> & imageArray) {
   return timestamp;
 }
 
+// This thread loads the streaming video into memory to be loaded into
+// OpenCV. The semaphore is a simple counting semaphore
+void * parserThread(void * notUsed){
+  system("curl -s http://192.168.1.90/mjpg/video.mjpg > imagefifo &");
+  std::ifstream myFile ("imagefifo",std::ifstream::binary);
+  std::vector<char> imageArray;
+  FrameRaw frame;
+  do {
+    frame.timestamp = getNextImage(myFile, imageArray);
+    frame.image = imageArray;
+    int value;
+    sem_getvalue(&frameRawSema, &value);
+    if (value < MIN_BUFFER_SIZE){
+      frameRawFifo.push(frame);
+      sem_post(&frameRawSema);
+    }
+    else {
+      printf("frame dropped (Capture): %u.%09u\n",frame.timestamp.sec,frame.timestamp.nsec);
+    }
+  } while (1);
+  return NULL;
+}
+
+//This thread converts JPEGs into Mats and undistorts them.
+void * processorThread(void * notUsed){
+  FrameRaw frameRaw;
+  FrameMat frameMat;
+  while(1){
+    sem_wait(&frameRawSema);
+    frameRaw = frameRawFifo.front();
+    frameRawFifo.pop();
+
+    int value;
+    sem_getvalue(&frameMatSema, &value);
+    if (value < MIN_BUFFER_SIZE){
+      frameMat.timestamp = frameRaw.timestamp;
+      frameMat.image = imdecode(frameRaw.image, CV_LOAD_IMAGE_COLOR);
+
+      undistortImage(frameMat.image);
+      frameMatFifo.push(frameMat);
+      sem_post(&frameMatSema);
+    }
+    else {
+      printf("frame dropped (Process): %u.%09u\n",frameRaw.timestamp.sec,frameRaw.timestamp.nsec);
+    }
+  }
+  return NULL;
+}
+
 int main(int argc, char* argv[]) {
 	//if we would like to calibrate our filter values, set to true.
 	bool calibrationMode = true;
@@ -784,64 +584,36 @@ int main(int argc, char* argv[]) {
 	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
 
-  // When NOT in calibration mode, use actual hard-coded color values
-  Robot home1(HOME), home2(HOME);
-  Robot away1(AWAY), away2(AWAY);
-  Ball ball;
-
   if (calibrationMode == true) {
     // Calibrate the camera first
-    runFullCalibration(capture, ball, home1, home2, away1, away2);
+    runFullCalibration(capture);
   }
 
-  namedWindow(windowName,WINDOW_NORMAL);
-
-  /************************************************************************/
-	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
   capture.release();
-  system("curl -s http://192.168.1.90/mjpg/video.mjpg > imagefifo &");
-  std::ifstream myFile ("imagefifo",std::ifstream::binary);
-  std::vector<char> imageArray;
-	while(1) {
-	  //TODO (Clover) There are bugs in your code that we'll need to fix later.
-//		//store image to matrix
-//		capture.read(cameraFeed);
-//
-//		//convert frame from BGR to HSV colorspace
-//		field_origin_x = field_center_x - (field_width/2);
-//		field_origin_y = field_center_y - (field_height/2);
-//    Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
-//    cameraFeed = cameraFeed(myROI);
-//
-//		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
-//
-//    inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold1);
-//
-//    // Erode, then dialate to get a cleaner image
-//    morphOps(threshold1);
-//    trackFilteredBall(ball,threshold1,HSV,cameraFeed);
-//
-//    inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold2);
-//    // Erode, then dialate to get a cleaner image
-//    morphOps(threshold2);
-//    trackFilteredRobot(home1,threshold2,HSV,cameraFeed);
-//
-//    // Display the filtered robot/ball images
-//    //threshold=OR(threshold2,threshold2);
-//
-//    // Show Field Outline
-//    Rect fieldOutline(0, 0, field_width-1, field_height-1);
-//    rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
-//		imshow(windowName,cameraFeed);
-//    imshow(windowName2,threshold);
 
+  //namedWindow(windowName,WINDOW_NORMAL);
+
+  // ************************************************************************
+  //start forked process and threads that:
+  //  1) read stream into a ifstream
+  //  2) parses stream into memory buffer and decodes it into openCV mat
+  //  3) processes mat
+  pthread_t parser;
+  pthread_t processor;
+  sem_init(&frameRawSema,0,0);
+  sem_init(&frameMatSema,0,0);
+  pthread_create (&parser, NULL, parserThread, NULL);
+  pthread_create (&processor, NULL, processorThread, NULL);
+  // ************************************************************************
+
+  while(1) {
+    sem_wait(&frameMatSema);
+    FrameMat frame = frameMatFifo.front();
+    frameMatFifo.pop();
     //store image to matrix
-    //capture.read(cameraFeed);
-	  Time timestamp = getNextImage(myFile,imageArray);
-	  printf("%u.%09u\n",timestamp.sec,timestamp.nsec);
-	  cameraFeed = imdecode(imageArray,CV_LOAD_IMAGE_COLOR);
-    undistortImage(cameraFeed);
+	  //Time timestamp = frame.timestamp;
+	  cameraFeed = frame.image;
 
     //convert frame from BGR to HSV colorspace
     field_origin_x = field_center_x - (field_width/2);
@@ -853,32 +625,40 @@ int main(int argc, char* argv[]) {
 
     // Track Ball
     inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
-    // Erode, then dialate to get a cleaner image
-    morphOps(threshold);
-    trackFilteredBall(ball,threshold,HSV,cameraFeed);
+    ball.trackFilteredBall(threshold,HSV,cameraFeed);
 
     // Track Home 1
     inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
-    // Erode, then dialate to get a cleaner image
-    morphOps(threshold);
-    trackFilteredRobot(home1,threshold,HSV,cameraFeed);
+    home1.trackFilteredRobot(threshold,HSV,cameraFeed);
 
     // Track Away 1
     inRange(HSV,away1.getHSVmin(),away1.getHSVmax(),threshold);
-    // Erode, then dialate to get a cleaner image
-    morphOps(threshold);
-    trackFilteredRobot(away1,threshold,HSV,cameraFeed);
+    away1.trackFilteredRobot(threshold,HSV,cameraFeed);
 
 
     // Show Field Outline
     Rect fieldOutline(0, 0, field_width, field_height);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
+    // Draw centering lines
+    Point top_mid(field_width/2, 0);
+    Point bot_mid(field_width/2, field_height);
+    Point left_mid(0, field_height/2);
+    Point right_mid(field_width, field_height/2);
+    line(cameraFeed,top_mid, bot_mid, Scalar(200,200,200), 1, 8, 0);
+    line(cameraFeed,left_mid, right_mid, Scalar(200,200,200), 1, 8, 0);
+
     //create window for trackbars
     imshow(windowName,cameraFeed);
 
-		//delay 30ms so that screen can refresh.
-		//image will not appear without this waitKey() command
-		waitKey(1);
+    // Wait to check if user wants to switch Home/Away
+    char pressedKey;
+    pressedKey = cvWaitKey(5); // Wait for user to press 'Enter'
+    if (pressedKey == 'a') {
+      TEAM = AWAY;
+    }
+    else if (pressedKey == 'h') {
+      TEAM = HOME;
+    }
 	}
 	return 0;
 }

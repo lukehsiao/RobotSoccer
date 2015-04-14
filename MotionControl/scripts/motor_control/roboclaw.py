@@ -90,8 +90,8 @@ def M1Forward(addr,val):
 	writebyte(checksum&0x7F);
 	return;
 
-def M1Backward(val):
-	sendcommand(128,1)
+def M1Backward(addr,val):
+	sendcommand(addr,1)
 	writebyte(val)
 	writebyte(checksum&0x7F);
 	return;
@@ -114,8 +114,8 @@ def M2Forward(addr,val):
 	writebyte(checksum&0x7F);
 	return;
 
-def M2Backward(val):
-	sendcommand(128,5)
+def M2Backward(addr,val):
+	sendcommand(addr,5)
 	writebyte(val)
 	writebyte(checksum&0x7F);
 	return;
@@ -195,15 +195,6 @@ def readM1speed(addr):
 		return enc
 	return -1;
 
-def readM1speedHD(addr):
-	sendcommand(addr,30);
-	enc = readslong();
-	status = readbyte();
-	crc = checksum&0x7F
-	if crc==readbyte()&0x7F:
-		return (enc,status);
-	return (-1,-1);
- 
 def readM2speed(addr):
 	sendcommand(addr,19);
 	enc = readslong();
@@ -212,15 +203,6 @@ def readM2speed(addr):
 	if crc==readbyte()&0x7F:
 		return enc
 	return -1;
-
-def readM2speedHD():
-	sendcommand(128,31);
-	enc = readslong();
-	status = readbyte();
-	crc = checksum&0x7F
-	if crc==readbyte()&0x7F:
-		return (enc,status);
-	return (-1,-1);
  
 def ResetEncoderCnts(addr):
 	sendcommand(addr,20)
@@ -265,8 +247,8 @@ def SetM2pidq(addr,p,i,d,qpps):
 	writebyte(checksum&0x7F);
 	return;
 
-def readM1instspeed():
-	sendcommand(128,30);
+def readM1instspeed(addr):
+	sendcommand(addr,30);
 	enc = readslong();
 	status = readbyte();
 	crc = checksum&0x7F
@@ -274,8 +256,8 @@ def readM1instspeed():
 		return (enc,status);
 	return (-1,-1);
 
-def readM2instspeed():
-	sendcommand(128,31);
+def readM2instspeed(addr):
+	sendcommand(addr,31);
 	enc = readslong();
 	status = readbyte();
 	crc = checksum&0x7F
@@ -601,7 +583,43 @@ def readerrorstate():
 	if crc==readbyte()&0x7F:
 		return val
 	return -1
+	
+def readEncoderMode(addr):
+  sendcommand(addr,91)
+  mode1 = readbyte()
+  mode2 = readbyte()
+  crc = checksum&0x7F
+  if crc==readbyte()&0x7F:
+    return (mode1,mode2)
+  return (-1,-1)
+  
+def writeSettingsToMem(addr):
+  sendcommand(addr,94)
+  crc = checksum&0x7F
+  if crc==readbyte()&0x7F:
+    return 0
+  return -1
 
+def calibrateRoboclaws():
+    p = int(65536 * 4)
+    i = int(65536 * 2)
+    d = int(65536 * 6)
+    #last good calibration readings
+    voltage = 15.9   # 15.8   # 16.5   # 16.5   # 15.9   # 15.9   # 15.5   # 15.3   # 16.6   # 15.5
+    qqps_m1 = 136502 # 140181 # 146772 # 130185 # 146330 # 149353 # 137669 # 141136 # 148132 # 149287
+    qqps_m2 = 164265 # 164244 # 177244 # 180669 # 180616 # 166407 # 172434 # 165175 # 168984 # 169069
+    qqps_m3 = 171489 # 165285 # 183906 # 181536 # 175021 # 170281 # 159700 # 161999 # 165146 # 164071
+
+    read_v = readmainbattery() / 10.0
+    
+    scale = lambda x: int(x*voltage/read_v)
+    speedM1 = scale(qqps_m1)
+    speedM2 = scale(qqps_m2)
+    speedM3 = scale(qqps_m3)
+    
+    SetM1pidq(128,p,i,d,speedM1)
+    SetM2pidq(128,p,i,d,speedM2)
+    SetM1pidq(129,p,i,d,speedM3)
 
 #print "Roboclaw Example 1\r\n"
 

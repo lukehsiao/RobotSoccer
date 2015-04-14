@@ -5,18 +5,16 @@ project(robot_soccer)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  message_generation
   roscpp
   rospy
   std_msgs
-  message_generation
-  sensor_msgs
-  cv_bridge
-  image_transport
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
+find_package( PkgConfig REQUIRED)
+pkg_check_modules( gsl REQUIRED gsl)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -48,30 +46,49 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
+# add_message_files(
+#   FILES
+#   Message1.msg
+#   Message2.msg
+# )
+
  add_message_files(
    FILES
    locations.msg
+   velocities.msg
  )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
+ add_service_files(
+   FILES
+   predictions.srv
+   home1loc.srv
+   commandsent.srv
+   ballloc.srv
+   curlocs.srv
+   commcenter.srv
 #   Service1.srv
 #   Service2.srv
-# )
+ )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
 #   FILES
-#   Action1.action
+#   Action1.actioni
 #   Action2.action
 # )
 
 ## Generate added messages and services with any dependencies listed here
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs
+# )
+
  generate_messages(
    DEPENDENCIES
    std_msgs
  )
+
 
 ###################################
 ## catkin specific configuration ##
@@ -85,7 +102,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES robot_soccer
-  CATKIN_DEPENDS roscpp rospy std_msgs message_runtime sensor_msgs cv_bridge image_transport
+  CATKIN_DEPENDS message_generation message_runtime roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -97,7 +114,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
-  ${catkin_INCLUDE_DIRS} src/include/robot_soccer
+  ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -165,8 +182,7 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-include_directories(include ${catkin_INCLUDE_DIRS}, src/include/robot_soccer)
+# include_directories(include ${catkin_INCLUDE_DIRS} include/robot_soccer)
 
-add_executable(computer_vision src/ComputerVision.cpp src/Ball.cpp src/Object.cpp src/Robot.cpp)
-target_link_libraries(computer_vision ${catkin_LIBRARIES})
-
+# add_executable(motion_control src/motion_control.cpp src/skill1.cpp)
+# target_link_libraries(motion_control ${catkin_LIBRARIES} ${gsl_LIBRARIES})
