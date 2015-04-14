@@ -1,7 +1,7 @@
 ## Robot Soccer ##
 
 Team: Vektor Krum<br>
-Version: 0.0.1<br>
+Version: 0.9.0br>
 Wiki Homepage: [Robot Soccer Wiki](https://github.com/lukehsiao/RobotSoccer/wiki)<br>
 
 ### What is this repository for? ###
