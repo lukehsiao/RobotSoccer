@@ -1,7 +1,6 @@
 ## Robot Soccer ##
 
 Team: Vektor Krum<br>
-Brigham Young University | ECEn 490<br>
 Winter 2015<br>
 Version: 1.0.0<br>
 Wiki Homepage: [Robot Soccer Wiki](https://github.com/lukehsiao/RobotSoccer/wiki)<br>
