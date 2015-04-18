@@ -10,7 +10,11 @@ This repository stores source code for all of the elements involved in creating 
 
 ### What does this code do? ###
 This repository contains the code that we used at BYU's final robot soccer competition for Winter 2015. To see a demo of what our software does look here:  
-[Introduction to Vektor Krum on YouTube](https://youtu.be/YhW_4Sq4YVQ)
+ 
+[![Introduction to Vektor Krum on YouTube](https://raw.githubusercontent.com/lukehsiao/RobotSoccer/master/Simulation/intro_screen.PNG)](https://youtu.be/YhW_4Sq4YVQ)
+
+Watch the results of the final competition here:
+[![Final Competition](https://raw.githubusercontent.com/lukehsiao/RobotSoccer/master/Simulation/final_screen.PNG)](https://youtu.be/CD5W8l1yd7A)
 
 ### How do I run this thing? ###
 Due to the complex nature of this project, please check the [Robot Soccer Wiki](https://github.com/lukehsiao/RobotSoccer/wiki) for more details. For those who would like to contribute, please follow the Fork and Pull model. We'd also love for contributions to our Wiki, let's make it a comprehensive guide for how to get this up and running!
