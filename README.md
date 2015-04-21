@@ -19,6 +19,8 @@ Watch the results of the final competition here:
 ### How do I run this thing? ###
 Due to the complex nature of this project, please check the [Robot Soccer Wiki](https://github.com/lukehsiao/RobotSoccer/wiki) for more details. For those who would like to contribute, please follow the Fork and Pull model. We'd also love for contributions to our Wiki, let's make it a comprehensive guide for how to get this up and running!
 
+Note that our wiki contains functional specifications, how-tos, as well as block diagrams of of our system that can help you get up to speed on how things are organized.  
+
 ### Who do I talk to? ###
 
 * [Luna Zhang](https://github.com/waffle555) - Motion
