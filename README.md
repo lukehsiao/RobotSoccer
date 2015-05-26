@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/lukehsiao/RobotSoccer.png?label=ready&title=Ready)](https://waffle.io/lukehsiao/RobotSoccer)
 ## Robot Soccer ##
 
 Team: Vektor Krum<br>
