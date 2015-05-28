@@ -1,5 +1,6 @@
-[![Stories in Ready](https://badge.waffle.io/lukehsiao/RobotSoccer.png?label=ready&title=Ready)](https://waffle.io/lukehsiao/RobotSoccer)
 ## Robot Soccer ##
+[![Stories in Ready](https://badge.waffle.io/lukehsiao/RobotSoccer.png?label=ready&title=Ready)](https://waffle.io/lukehsiao/RobotSoccer)
+[![Join the chat at https://gitter.im/lukehsiao/RobotSoccer](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/lukehsiao/RobotSoccer?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Team: Vektor Krum<br>
 Winter 2015<br>
