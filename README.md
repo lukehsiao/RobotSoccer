@@ -1,6 +1,7 @@
 ## Robot Soccer ##
-[![Stories in Ready](https://badge.waffle.io/lukehsiao/RobotSoccer.png?label=ready&title=Ready)](https://waffle.io/lukehsiao/RobotSoccer)
 [![Join the chat at https://gitter.im/lukehsiao/RobotSoccer](https://img.shields.io/gitter/room/nwjs/nw.js.svg?style=flat)](https://gitter.im/lukehsiao/RobotSoccer?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![GitHub issues](https://img.shields.io/github/issues/lukehsiao/RobotSoccer.svg)](https://github.com/lukehsiao/RobotSoccer/issues)
+[![GitHub license](https://img.shields.io/github/license/lukehsiao/RobotSoccer.svg)](https://github.com/lukehsiao/RobotSoccer/blob/master/LICENSE)
 
 Team: Vektor Krum<br>
 Winter 2015<br>
